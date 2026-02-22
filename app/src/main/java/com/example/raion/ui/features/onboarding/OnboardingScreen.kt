@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.offset
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,8 +54,7 @@ fun OnboardingScreen(
         onNavigateNext()
         viewModel.onEvent(OnboardingEvent.NavigationHandled)
     }
-
-    // Dummy pages, you should replace the drawables with actual R.drawable references
+    
     val pages = listOf(
         OnboardingPageInfo(
             title = "Sampah Bisa\nMerusak Bumi!",
@@ -94,24 +94,6 @@ fun OnboardingScreen(
             .fillMaxSize()
             .background(brush = backgroundBrush)
     ) {
-        // Top right Skip Button
-        if (pagerState.currentPage < pages.size - 1) {
-            TextButton(
-                onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 24.dp)
-                    .background(Color.White, RoundedCornerShape(24.dp))
-                    .height(36.dp)
-            ) {
-                Text(
-                    text = "Lewati",
-                    color = DesignTokens.Colors.TextSecondary,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        }
-
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
@@ -119,7 +101,9 @@ fun OnboardingScreen(
             val page = pages[position]
             
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clipToBounds(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Top Half: Image placeholder
@@ -225,6 +209,23 @@ fun OnboardingScreen(
                         }
                     }
                 }
+            }
+        }
+
+        if (pagerState.currentPage < pages.size - 1) {
+            TextButton(
+                onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 48.dp, end = 24.dp)
+                    .background(Color.White, RoundedCornerShape(24.dp))
+                    .height(36.dp)
+            ) {
+                Text(
+                    text = "Lewati",
+                    color = DesignTokens.Colors.TextSecondary,
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
