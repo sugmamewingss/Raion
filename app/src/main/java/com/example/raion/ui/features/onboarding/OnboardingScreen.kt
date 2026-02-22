@@ -1,0 +1,231 @@
+package com.example.raion.ui.features.onboarding
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.offset
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.raion.ui.features.onboarding.components.PageIndicator
+import com.example.raion.ui.features.onboarding.components.PrimaryButton
+import com.example.raion.ui.theme.DesignTokens
+import kotlinx.coroutines.launch
+import com.example.raion.R
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun OnboardingScreen(
+    onNavigateNext: () -> Unit,
+    viewModel: OnboardingViewModel = viewModel()
+) {
+    val navigateToAuth by viewModel.navigateToAuth.collectAsState()
+    
+    if (navigateToAuth) {
+        onNavigateNext()
+        viewModel.onEvent(OnboardingEvent.NavigationHandled)
+    }
+
+    // Dummy pages, you should replace the drawables with actual R.drawable references
+    val pages = listOf(
+        OnboardingPageInfo(
+            title = "Sampah Bisa\nMerusak Bumi!",
+            description = "Yuk, bantu Dino menjaga bumi agar tetap bersih dan sehat!",
+            imageRes = R.drawable.onboarding_1,
+            imageScale = 1.0f,
+            imageOffsetY = 40.dp
+        ),
+        OnboardingPageInfo(
+            title = "Ayo Jadi Pahlawan\nLingkungan!",
+            description = "Selesaikan misi, kumpulkan poin, dan selamatkan bumi bersama Dino!",
+            imageRes = R.drawable.onboarding_2,
+            imageScale = 1.15f,
+            imageOffsetY = 0.dp
+        ),
+        OnboardingPageInfo(
+            title = "Buang Sampah Pada\nTempatnya Itu Keren",
+            description = "Bersama Dino, kita jaga bumi agar kembali bersih dan asri!",
+            imageRes = R.drawable.onboarding_3,
+            imageScale = 1.15f,
+            imageOffsetY = 0.dp
+        )
+    )
+
+    val pagerState = rememberPagerState(pageCount = { pages.size })
+    val coroutineScope = rememberCoroutineScope()
+
+    val backgroundBrush = Brush.verticalGradient(
+        0.0f to DesignTokens.Colors.BackgroundGradientStart,
+        0.37f to Color(0xFFFBFBFB),
+        0.72f to Color(0xFFF7F7F7),
+        1.0f to DesignTokens.Colors.BackgroundGradientEnd
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = backgroundBrush)
+    ) {
+        // Top right Skip Button
+        if (pagerState.currentPage < pages.size - 1) {
+            TextButton(
+                onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 48.dp, end = 24.dp)
+                    .background(Color.White, RoundedCornerShape(24.dp))
+                    .height(36.dp)
+            ) {
+                Text(
+                    text = "Lewati",
+                    color = DesignTokens.Colors.TextSecondary,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { position ->
+            val page = pages[position]
+            
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Top Half: Image placeholder
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1.5f),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Image(
+                        painter = painterResource(id = page.imageRes),
+                        contentDescription = "Onboarding Image",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(page.imageScale)
+                            .offset(y = page.imageOffsetY)
+                    )
+                    // Temporary visual placeholder to see layout
+                    /*
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .fillMaxHeight(0.6f)
+                            .background(Color.LightGray.copy(alpha=0.5f))
+                    )
+                    */
+                }
+
+                // Bottom Half: Text Card
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    color = DesignTokens.Colors.CardBackground,
+                    shape = RoundedCornerShape(
+                        topStart = DesignTokens.Dimensions.CornerRadiusLarge,
+                        topEnd = DesignTokens.Dimensions.CornerRadiusLarge
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(
+                                horizontal = 24.dp,
+                                vertical = 32.dp
+                            )
+                    ) {
+                        val eyebrow = if (position == 0) "Tahukah Kamu?" 
+                                      else if (position == 1) "Sudah Siap?" 
+                                      else "Yuk Buktikan!"
+                        
+                        Text(
+                            text = eyebrow,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Normal,
+                            color = DesignTokens.Colors.TextSecondary
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = page.title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = DesignTokens.Colors.BrandDark,
+                            lineHeight = MaterialTheme.typography.headlineMedium.lineHeight
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Text(
+                            text = page.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = DesignTokens.Colors.TextSecondary
+                        )
+                        
+                        Spacer(modifier = Modifier.weight(1f))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            PageIndicator(
+                                pageCount = pages.size,
+                                currentPage = pagerState.currentPage
+                            )
+
+                            PrimaryButton(
+                                text = if (pagerState.currentPage == pages.size - 1) "Mulai" else "Lanjut",
+                                onClick = {
+                                    if (pagerState.currentPage < pages.size - 1) {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                        }
+                                        viewModel.onEvent(OnboardingEvent.NextClicked)
+                                    } else {
+                                        viewModel.onEvent(OnboardingEvent.GetStartedClicked)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
