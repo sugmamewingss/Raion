@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.raion.ui.features.onboarding.components.PageIndicator
 import com.example.raion.ui.features.onboarding.components.PrimaryButton
+import com.example.raion.ui.features.onboarding.components.SecondaryButton
 import com.example.raion.ui.theme.DesignTokens
 import kotlinx.coroutines.launch
 import com.example.raion.R
@@ -64,16 +65,16 @@ fun OnboardingScreen(
             imageOffsetY = 40.dp
         ),
         OnboardingPageInfo(
-            title = "Ayo Jadi Pahlawan\nLingkungan!",
-            description = "Selesaikan misi, kumpulkan poin, dan selamatkan bumi bersama Dino!",
-            imageRes = R.drawable.onboarding_2,
+            title = "Buang Sampah Pada\nTempatnya Itu Keren",
+            description = "Bersama Dino, kita jaga bumi agar kembali bersih dan asri!",
+            imageRes = R.drawable.onboarding_3,
             imageScale = 1.15f,
             imageOffsetY = 0.dp
         ),
         OnboardingPageInfo(
-            title = "Buang Sampah Pada\nTempatnya Itu Keren",
-            description = "Bersama Dino, kita jaga bumi agar kembali bersih dan asri!",
-            imageRes = R.drawable.onboarding_3,
+            title = "Ayo Jadi Pahlawan\nLingkungan!",
+            description = "Selesaikan misi, kumpulkan poin, dan selamatkan bumi bersama Dino!",
+            imageRes = R.drawable.onboarding_2,
             imageScale = 1.15f,
             imageOffsetY = 0.dp
         )
@@ -212,20 +213,36 @@ fun OnboardingScreen(
             }
         }
 
-        if (pagerState.currentPage < pages.size - 1) {
-            TextButton(
-                onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 24.dp)
-                    .background(Color.White, RoundedCornerShape(24.dp))
-                    .height(36.dp)
-            ) {
-                Text(
-                    text = "Lewati",
-                    color = DesignTokens.Colors.TextSecondary,
-                    style = MaterialTheme.typography.labelLarge
+        // Top Navigation Bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 48.dp, start = 24.dp, end = 24.dp)
+                .align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Left Button: "Kembali"
+            if (pagerState.currentPage > 0) {
+                SecondaryButton(
+                    text = "Kembali",
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }
                 )
+            } else {
+                Spacer(modifier = Modifier.weight(1f)) // Empty block
+            }
+
+            // Right Button: "Lewati"
+            if (pagerState.currentPage < pages.size - 1) {
+                SecondaryButton(
+                    text = "Lewati",
+                    onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) }
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f)) // Empty block
             }
         }
     }
