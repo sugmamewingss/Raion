@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,7 +26,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -35,9 +40,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.math.absoluteValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.raion.ui.features.onboarding.components.PageIndicator
 import com.example.raion.ui.features.onboarding.components.PrimaryButton
+import com.example.raion.ui.features.onboarding.components.SecondaryButton
 import com.example.raion.ui.theme.DesignTokens
 import kotlinx.coroutines.launch
 import com.example.raion.R
@@ -64,23 +72,22 @@ fun OnboardingScreen(
             imageOffsetY = 40.dp
         ),
         OnboardingPageInfo(
-            title = "Ayo Jadi Pahlawan\nLingkungan!",
-            description = "Selesaikan misi, kumpulkan poin, dan selamatkan bumi bersama Dino!",
+            title = "Buang Sampah Pada\nTempatnya Itu Keren",
+            description = "Bersama Dino, kita jaga bumi agar kembali bersih dan asri!",
             imageRes = R.drawable.onboarding_2,
             imageScale = 1.15f,
             imageOffsetY = 0.dp
         ),
         OnboardingPageInfo(
-            title = "Buang Sampah Pada\nTempatnya Itu Keren",
-            description = "Bersama Dino, kita jaga bumi agar kembali bersih dan asri!",
+            title = "Ayo Jadi Pahlawan\nLingkungan!",
+            description = "Selesaikan misi, kumpulkan poin, dan selamatkan bumi bersama Dino!",
             imageRes = R.drawable.onboarding_3,
             imageScale = 1.15f,
             imageOffsetY = 0.dp
         )
     )
 
-    val pagerState = rememberPagerState(pageCount = { pages.size })
-    val coroutineScope = rememberCoroutineScope()
+    var currentPage by remember { mutableIntStateOf(0) }
 
     val backgroundBrush = Brush.verticalGradient(
         0.0f to DesignTokens.Colors.BackgroundGradientStart,
@@ -94,9 +101,13 @@ fun OnboardingScreen(
             .fillMaxSize()
             .background(brush = backgroundBrush)
     ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
+        AnimatedContent(
+            targetState = currentPage,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
+            },
+            modifier = Modifier.fillMaxSize(),
+            label = "OnboardingTransition"
         ) { position ->
             val page = pages[position]
             
@@ -106,7 +117,6 @@ fun OnboardingScreen(
                     .clipToBounds(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top Half: Image placeholder
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -122,18 +132,8 @@ fun OnboardingScreen(
                             .scale(page.imageScale)
                             .offset(y = page.imageOffsetY)
                     )
-                    // Temporary visual placeholder to see layout
-                    /*
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.6f)
-                            .fillMaxHeight(0.6f)
-                            .background(Color.LightGray.copy(alpha=0.5f))
-                    )
-                    */
                 }
 
-                // Bottom Half: Text Card
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -153,8 +153,8 @@ fun OnboardingScreen(
                             )
                     ) {
                         val eyebrow = if (position == 0) "Tahukah Kamu?" 
-                                      else if (position == 1) "Sudah Siap?" 
-                                      else "Yuk Buktikan!"
+                                      else if (position == 1) "Yuk Buktikan!" 
+                                      else "Sudah Siap?"
                         
                         Text(
                             text = eyebrow,
@@ -190,16 +190,14 @@ fun OnboardingScreen(
                         ) {
                             PageIndicator(
                                 pageCount = pages.size,
-                                currentPage = pagerState.currentPage
+                                currentPage = currentPage
                             )
 
                             PrimaryButton(
-                                text = if (pagerState.currentPage == pages.size - 1) "Mulai" else "Lanjut",
+                                text = if (currentPage == pages.size - 1) "Mulai" else "Lanjut",
                                 onClick = {
-                                    if (pagerState.currentPage < pages.size - 1) {
-                                        coroutineScope.launch {
-                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                        }
+                                    if (currentPage < pages.size - 1) {
+                                        currentPage++
                                         viewModel.onEvent(OnboardingEvent.NextClicked)
                                     } else {
                                         viewModel.onEvent(OnboardingEvent.GetStartedClicked)
@@ -212,20 +210,29 @@ fun OnboardingScreen(
             }
         }
 
-        if (pagerState.currentPage < pages.size - 1) {
-            TextButton(
-                onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 24.dp)
-                    .background(Color.White, RoundedCornerShape(24.dp))
-                    .height(36.dp)
-            ) {
-                Text(
-                    text = "Lewati",
-                    color = DesignTokens.Colors.TextSecondary,
-                    style = MaterialTheme.typography.labelLarge
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 48.dp, start = 24.dp, end = 24.dp)
+                .align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            if (currentPage > 0) {
+                SecondaryButton(
+                    text = "Kembali",
+                    onClick = { currentPage-- }
                 )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            if (currentPage < pages.size - 1) {
+                SecondaryButton(
+                    text = "Lewati",
+                    onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) }
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
