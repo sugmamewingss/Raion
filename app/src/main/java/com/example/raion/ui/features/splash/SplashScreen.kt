@@ -34,9 +34,9 @@ fun SplashScreen(
     var currentState by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        delay(1000)
+        delay(500)
         currentState = 1
-        delay(1500)
+        delay(1000)
         onSplashFinished()
     }
 
