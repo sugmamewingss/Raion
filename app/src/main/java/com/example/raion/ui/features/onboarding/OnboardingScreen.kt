@@ -117,7 +117,6 @@ fun OnboardingScreen(
                     .clipToBounds(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top Half: Image placeholder
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -133,18 +132,8 @@ fun OnboardingScreen(
                             .scale(page.imageScale)
                             .offset(y = page.imageOffsetY)
                     )
-                    // Temporary visual placeholder to see layout
-                    /*
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.6f)
-                            .fillMaxHeight(0.6f)
-                            .background(Color.LightGray.copy(alpha=0.5f))
-                    )
-                    */
                 }
 
-                // Bottom Half: Text Card
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -221,7 +210,6 @@ fun OnboardingScreen(
             }
         }
 
-        // Top Navigation Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -229,24 +217,22 @@ fun OnboardingScreen(
                 .align(Alignment.TopCenter),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left Button: "Kembali"
             if (currentPage > 0) {
                 SecondaryButton(
                     text = "Kembali",
                     onClick = { currentPage-- }
                 )
             } else {
-                Spacer(modifier = Modifier.weight(1f)) // Empty block
+                Spacer(modifier = Modifier.weight(1f))
             }
 
-            // Right Button: "Lewati"
             if (currentPage < pages.size - 1) {
                 SecondaryButton(
                     text = "Lewati",
                     onClick = { viewModel.onEvent(OnboardingEvent.SkipClicked) }
                 )
             } else {
-                Spacer(modifier = Modifier.weight(1f)) // Empty block
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }

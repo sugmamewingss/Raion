@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.raion.ui.features.auth.AuthSelectionScreen
 import com.example.raion.ui.features.onboarding.OnboardingScreen
+import com.example.raion.ui.features.splash.SplashScreen
 
 @Composable
 fun AppNavigation() {
@@ -13,8 +14,17 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = "onboarding"
+        startDestination = "splash"
     ) {
+        composable("splash") {
+            SplashScreen(
+                onSplashFinished = {
+                    navController.navigate("onboarding") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
+            )
+        }
         composable("onboarding") {
             OnboardingScreen(
                 onNavigateNext = {
