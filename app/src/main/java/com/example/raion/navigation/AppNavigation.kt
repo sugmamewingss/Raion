@@ -6,7 +6,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.raion.ui.features.auth.AuthSelectionScreen
 import com.example.raion.ui.features.auth.LoginScreen
-// [TAMBAHAN BARU] Import halaman RegisterStep1Screen
 import com.example.raion.ui.features.auth.register.RegisterStep1Screen
 import com.example.raion.ui.features.onboarding.OnboardingScreen
 import com.example.raion.ui.features.splash.SplashScreen
@@ -28,11 +27,12 @@ fun AppNavigation() {
                 }
             )
         }
-
         composable("onboarding") {
             OnboardingScreen(
                 onNavigateNext = {
-                    navController.navigate("auth_selection")
+                    navController.navigate("auth_selection") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
                 }
             )
         }
