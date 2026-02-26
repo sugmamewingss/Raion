@@ -11,11 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
@@ -47,6 +48,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.raion.R
+import com.example.raion.ui.features.auth.components.AuthPrimaryButton
+import com.example.raion.ui.theme.DesignTokens
 import com.example.raion.ui.theme.RaionTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,28 +63,24 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
 
-    // Warna dari desain
-    val CreamBackground = Color(0xFFFFFBE6)
-    val TealColor = Color(0xFF6AC9AB)
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CreamBackground)
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .background(DesignTokens.Colors.CardBackground)
+            .padding(horizontal = DesignTokens.Dimensions.PaddingLarge, vertical = DesignTokens.Dimensions.PaddingMedium)
             // Menambahkan scroll agar aman di layar HP kecil
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // --- HEADER (Tombol Back & Judul) ---
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Kembali",
                     tint = Color.Black
                 )
@@ -105,8 +104,6 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(48.dp))
 
         // --- ILUSTRASI DINO ---
-        // Catatan: Pastikan kamu menambahkan gambar dino ini ke folder drawable ya!
-        // Saya asumsikan nama filenya 'dino_writing'
         Image(
             painter = painterResource(id = R.drawable.dinomenulis),
             contentDescription = "Dino Menulis",
@@ -124,7 +121,7 @@ fun LoginScreen(
                 text = "Nama atau email",
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    color = Color.DarkGray
+                    color = DesignTokens.Colors.TextSecondary
                 )
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -140,10 +137,10 @@ fun LoginScreen(
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(DesignTokens.Dimensions.CornerRadiusMedium),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = TealColor,
-                    unfocusedBorderColor = TealColor,
+                    focusedBorderColor = DesignTokens.Colors.BrandPrimary,
+                    unfocusedBorderColor = DesignTokens.Colors.BrandPrimary.copy(alpha = 0.5f),
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White
                 )
@@ -158,7 +155,7 @@ fun LoginScreen(
                 text = "Kata sandi",
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    color = Color.DarkGray
+                    color = DesignTokens.Colors.TextSecondary
                 )
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -175,10 +172,10 @@ fun LoginScreen(
                 },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(DesignTokens.Dimensions.CornerRadiusMedium),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = TealColor,
-                    unfocusedBorderColor = TealColor,
+                    focusedBorderColor = DesignTokens.Colors.BrandPrimary,
+                    unfocusedBorderColor = DesignTokens.Colors.BrandPrimary.copy(alpha = 0.5f),
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White
                 )
@@ -196,37 +193,25 @@ fun LoginScreen(
                 checked = rememberMe,
                 onCheckedChange = { rememberMe = it },
                 colors = CheckboxDefaults.colors(
-                    checkedColor = TealColor,
-                    uncheckedColor = TealColor,
+                    checkedColor = DesignTokens.Colors.BrandPrimary,
+                    uncheckedColor = DesignTokens.Colors.BrandPrimary,
                     checkmarkColor = Color.White
                 )
             )
             Text(
                 text = "Ingat Aku",
-                style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
+                style = MaterialTheme.typography.bodyMedium.copy(color = DesignTokens.Colors.TextSecondary)
             )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         // --- TOMBOL MASUK ---
-        Button(
+        AuthPrimaryButton(
+            text = "MASUK",
             onClick = onLoginSubmit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = TealColor)
-        ) {
-            Text(
-                text = "MASUK",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                    color = Color.White
-                )
-            )
-        }
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
 
         Spacer(modifier = Modifier.height(48.dp))
 
