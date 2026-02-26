@@ -12,7 +12,7 @@ object DesignTokens {
         val BackgroundGradientEnd = Color(0xFFF8F8EB)
         val TextSecondary = Color(0xFF474444)
         val IndicatorInactive = Color(0xFFE0E0E0)
-        val CardBackground = Color(0xFFFFFFFF)
+        val CardBackground = Color(0xFFFEFEEF)
         val StrokeDark = Color.Black.copy(alpha = 0.26f)
     }
 
@@ -20,6 +20,7 @@ object DesignTokens {
         val PaddingSmall = 8.dp
         val PaddingMedium = 16.dp
         val PaddingLarge = 24.dp
+        val CornerRadiusMedium = 16.dp
         val CornerRadiusLarge = 32.dp
         val ButtonHeight = 48.dp
         val BorderStrokeStardard = 1.dp
