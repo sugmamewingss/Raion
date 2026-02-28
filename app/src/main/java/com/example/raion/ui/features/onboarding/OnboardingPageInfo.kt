@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 data class OnboardingPageInfo(
     val title: String,
     val description: String,
-    @DrawableRes val imageRes: Int,
+    @param:DrawableRes val imageRes: Int,
     val imageScale: Float = 1.0f,
     val imageOffsetY: Dp = 0.dp
 )

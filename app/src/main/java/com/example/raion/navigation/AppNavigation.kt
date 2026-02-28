@@ -1,20 +1,20 @@
 package com.example.raion.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.Lifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.raion.ui.features.auth.AuthSelectionScreen
 import com.example.raion.ui.features.auth.LoginScreen
-import com.example.raion.ui.features.auth.register.RegisterStep1Screen
-import com.example.raion.ui.features.auth.register.RegisterStep2Screen
-import com.example.raion.ui.features.auth.register.RegisterStep3Screen
-import com.example.raion.ui.features.auth.register.RegisterStep4Screen
-import com.example.raion.ui.features.auth.register.RegisterStep5Screen
-import com.example.raion.ui.features.auth.register.RegisterStep6Screen
-import com.example.raion.ui.features.auth.register.RegisterStepFinalScreen
+import com.example.raion.ui.features.auth.LoginViewModel
+import com.example.raion.ui.features.auth.register.RegisterScreen
+import com.example.raion.ui.features.auth.register.RegisterViewModel
 import com.example.raion.ui.features.onboarding.OnboardingScreen
 import com.example.raion.ui.features.splash.SplashScreen
+import com.example.raion.ui.features.home.HomeScreen
 
 @Composable
 fun AppNavigation() {
@@ -24,111 +24,95 @@ fun AppNavigation() {
         navController = navController,
         startDestination = "splash"
     ) {
-        composable("splash") {
+        composable("splash") { backStackEntry ->
+            val splashViewModel: com.example.raion.ui.features.splash.SplashViewModel = hiltViewModel()
             SplashScreen(
-                onSplashFinished = {
-                    navController.navigate("onboarding") {
-                        popUpTo("splash") { inclusive = true }
+                viewModel = splashViewModel,
+                onNavigate = { route ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate(route) {
+                            popUpTo("splash") { inclusive = true }
+                        }
                     }
                 }
             )
         }
-        composable("onboarding") {
+        composable("onboarding") { backStackEntry ->
+            val onboardingViewModel: com.example.raion.ui.features.onboarding.OnboardingViewModel = hiltViewModel()
             OnboardingScreen(
+                viewModel = onboardingViewModel,
                 onNavigateNext = {
-                    navController.navigate("auth_selection") {
-                        popUpTo("onboarding") { inclusive = true }
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("auth_selection") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
                     }
                 }
             )
         }
 
-        composable("auth_selection") {
+        composable("auth_selection") { backStackEntry ->
             AuthSelectionScreen(
                 onLoginClick = {
-                    navController.navigate("login")
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("login")
+                    }
                 },
                 onRegisterClick = {
-                    navController.navigate("register_step_1")
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("register")
+                    }
                 }
             )
         }
 
-        composable("login") {
+        composable("login") { backStackEntry ->
+            val loginViewModel: LoginViewModel = hiltViewModel()
             LoginScreen(
+                viewModel = loginViewModel,
                 onBackClick = {
-                    navController.popBackStack()
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
                 },
                 onLoginSubmit = {
-                    // Nanti diisi setelah ada halaman Home
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("home") {
+                            popUpTo("auth_selection") { inclusive = true }
+                        }
+                    }
                 }
             )
         }
 
-        // Rute untuk Register Langkah 1
-        composable("register_step_1") {
-            RegisterStep1Screen(
-                onBackClick = {
-                    navController.popBackStack()
+        composable("register") { backStackEntry ->
+            val registerViewModel: RegisterViewModel = hiltViewModel()
+            RegisterScreen(
+                viewModel = registerViewModel,
+                onBackToAuthSelection = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
                 },
-                onNextClick = {
-                    navController.navigate("register_step_2")
+                onFinishRegister = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("home") {
+                            popUpTo("auth_selection") { inclusive = true }
+                        }
+                    }
                 }
             )
         }
 
-        // Rute untuk Register Langkah 2
-        composable("register_step_2") {
-            RegisterStep2Screen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onNextClick = {
-                    navController.navigate("register_step_3")
-                }
-            )
-        }
-
-        composable("register_step_3") {
-            RegisterStep3Screen(
-                onBackClick = { navController.popBackStack() },
-                onNextClick = {
-                     navController.navigate("register_step_4")
-                }
-            )
-        }
-
-        composable("register_step_4") {
-            RegisterStep4Screen(
-                onBackClick = { navController.popBackStack() },
-                onNextClick = {
-                     navController.navigate("register_step_5")
-                }
-            )
-        }
-
-        composable("register_step_5") {
-            RegisterStep5Screen(
-                onBackClick = { navController.popBackStack() },
-                onNextClick = {
-                    navController.navigate("register_step_6")
-                }
-            )
-        }
-
-        composable("register_step_6") {
-            RegisterStep6Screen(
-                onBackClick = { navController.popBackStack() },
-                onNextClick = {
-                    navController.navigate("register_step_final") }
-            )
-        }
-        composable("register_step_final") {
-            RegisterStepFinalScreen(
-                onBackClick = { navController.popBackStack() },
-                onFinishClick = {
-                    navController.navigate("login") {
-                        popUpTo("auth_selection")
+        composable("home") { backStackEntry ->
+            val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel()
+            HomeScreen(
+                viewModel = homeViewModel,
+                onNavigateOut = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("auth_selection") {
+                            popUpTo("home") { inclusive = true }
+                        }
                     }
                 }
             )
