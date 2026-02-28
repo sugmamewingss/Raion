@@ -26,18 +26,29 @@ import androidx.compose.ui.unit.sp
 import com.example.raion.R
 import com.example.raion.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun SplashScreen(
-    onSplashFinished: () -> Unit
+    viewModel: SplashViewModel = hiltViewModel(),
+    onNavigate: (String) -> Unit
 ) {
     var currentState by remember { mutableIntStateOf(0) }
+    val routeState by viewModel.routeState.collectAsState()
 
     LaunchedEffect(Unit) {
+        viewModel.determineNextRoute()
         delay(500)
         currentState = 1
         delay(1000)
-        onSplashFinished()
+        
+        when (routeState) {
+            is SplashRoute.Onboarding -> onNavigate("onboarding")
+            is SplashRoute.AuthSelection -> onNavigate("auth_selection")
+            is SplashRoute.Home -> onNavigate("home")
+            else -> onNavigate("auth_selection") // fallback
+        }
     }
 
     Box(

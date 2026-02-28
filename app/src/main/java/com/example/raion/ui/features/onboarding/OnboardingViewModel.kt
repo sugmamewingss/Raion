@@ -1,11 +1,19 @@
 package com.example.raion.ui.features.onboarding
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.raion.data.local.UserPreferences
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class OnboardingViewModel : ViewModel() {
+@HiltViewModel
+class OnboardingViewModel @Inject constructor(
+    private val userPreferences: UserPreferences
+) : ViewModel() {
 
     private val _navigateToAuth = MutableStateFlow(false)
     val navigateToAuth: StateFlow<Boolean> = _navigateToAuth.asStateFlow()
@@ -13,14 +21,20 @@ class OnboardingViewModel : ViewModel() {
     fun onEvent(event: OnboardingEvent) {
         when (event) {
             is OnboardingEvent.SkipClicked -> {
-                _navigateToAuth.value = true
+                viewModelScope.launch {
+                    userPreferences.saveOnboardingCompleted(true)
+                    _navigateToAuth.value = true
+                }
             }
             is OnboardingEvent.NextClicked -> {
                 // UI logic to swipe pager handled in Compose locally.
                 // If it's the last page, we navigate.
             }
             is OnboardingEvent.GetStartedClicked -> {
-                _navigateToAuth.value = true
+                viewModelScope.launch {
+                    userPreferences.saveOnboardingCompleted(true)
+                    _navigateToAuth.value = true
+                }
             }
             is OnboardingEvent.NavigationHandled -> {
                 _navigateToAuth.value = false
