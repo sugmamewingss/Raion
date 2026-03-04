@@ -2,6 +2,7 @@ package com.example.raion.ui.features.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.raion.R
 import com.example.raion.ui.features.auth.components.AuthPrimaryButton
+import com.example.raion.ui.features.auth.components.WaveBackground
 import com.example.raion.ui.theme.DesignTokens
 import com.example.raion.ui.theme.RaionTheme
 
@@ -101,7 +103,7 @@ fun LoginScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(DesignTokens.Colors.CardBackground)
+                    .background(Color.Transparent)
                     .padding(horizontal = DesignTokens.Dimensions.PaddingLarge, vertical = 16.dp)
             ) {
                 Spacer(modifier = Modifier.height(32.dp))
@@ -140,63 +142,23 @@ fun LoginScreen(
                 }
             }
         },
-        bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(DesignTokens.Colors.CardBackground)
-                    .padding(horizontal = DesignTokens.Dimensions.PaddingLarge, vertical = DesignTokens.Dimensions.PaddingLarge),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                AuthPrimaryButton(
-                    text = if (uiState.isLoading) "MEMPROSES..." else "MASUK",
-                    onClick = {
-                        if (uiState.isLoading) return@AuthPrimaryButton
-                        viewModel.submitLogin(rememberMe)
-                    },
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                val annotatedString = buildAnnotatedString {
-                    append("Dengan masuk, kamu menyetujui\n")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color.Black)) {
-                        append("Syarat & Ketentuan")
-                    }
-                    append(" serta ")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color.Black)) {
-                        append("Kebijakan Privasi")
-                    }
-                    append(" kami.")
-                }
-                Text(
-                    text = annotatedString,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                        color = DesignTokens.Colors.TextSecondary
-                    ),
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        },
-        containerColor = DesignTokens.Colors.CardBackground,
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(DesignTokens.Colors.CardBackground)
-                .padding(paddingValues)
-                .padding(horizontal = DesignTokens.Dimensions.PaddingLarge)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            WaveBackground()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = DesignTokens.Dimensions.PaddingLarge)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             Spacer(modifier = Modifier.height(16.dp))
 
         Image(
-            painter = painterResource(id = R.drawable.dinomenulis),
+            painter = painterResource(id = R.drawable.dino_writing),
             contentDescription = "Dino Menulis",
             modifier = Modifier
                 .fillMaxWidth(0.65f)
@@ -208,9 +170,9 @@ fun LoginScreen(
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Nama panggilan (Username)",
+                text = "Nama Pengguna",
                 style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = DesignTokens.Colors.TextSecondary
                 )
             )
@@ -218,7 +180,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = uiState.username,
                 onValueChange = { viewModel.updateUsername(it) },
-                placeholder = { Text("Ketik nama panggilan rahasiamu", style = MaterialTheme.typography.bodyLarge) },
+                placeholder = { Text("Masukkan nama pengguna", style = MaterialTheme.typography.bodyLarge) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Rounded.Person,
@@ -232,7 +194,7 @@ fun LoginScreen(
                     imeAction = ImeAction.Next
                 ),
                 isError = uiState.usernameError != null,
-                supportingText = { uiState.usernameError?.let { err -> Text(err, color = MaterialTheme.colorScheme.error) } },
+                supportingText = { uiState.usernameError?.let { err -> Text(err, color = MaterialTheme.colorScheme.error, modifier = Modifier.offset(x = (-16).dp)) } },
                 shape = RoundedCornerShape(DesignTokens.Dimensions.CornerRadiusMedium),
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     color = Color.Black
@@ -262,9 +224,9 @@ fun LoginScreen(
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Kata sandi",
+                text = "Kata Sandi",
                 style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = DesignTokens.Colors.TextSecondary
                 )
             )
@@ -272,7 +234,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = uiState.password,
                 onValueChange = { viewModel.updatePassword(it) },
-                placeholder = { Text("Ayo ingat sandi rahasiamu", style = MaterialTheme.typography.bodyLarge) },
+                placeholder = { Text("Masukkan kata sandi", style = MaterialTheme.typography.bodyLarge) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Rounded.Lock,
@@ -296,7 +258,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 isError = uiState.passwordError != null,
-                supportingText = { uiState.passwordError?.let { err -> Text(err, color = MaterialTheme.colorScheme.error) } },
+                supportingText = { uiState.passwordError?.let { err -> Text(err, color = MaterialTheme.colorScheme.error, modifier = Modifier.offset(x = (-16).dp)) } },
                 shape = RoundedCornerShape(DesignTokens.Dimensions.CornerRadiusMedium),
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     color = Color.Black
@@ -338,17 +300,47 @@ fun LoginScreen(
                 )
             )
             Text(
-                text = "Simpan info login saya",
+                text = "Simpan info login",
                 style = MaterialTheme.typography.labelLarge.copy(
                     color = DesignTokens.Colors.TextSecondary,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Medium
                 ),
                 modifier = Modifier.offset(x = (-4).dp)
             )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+        
+        AuthPrimaryButton(
+            text = if (uiState.isLoading) "MEMPROSES..." else "MASUK",
+            onClick = {
+                if (uiState.isLoading) return@AuthPrimaryButton
+                viewModel.submitLogin(rememberMe)
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        val annotatedString = buildAnnotatedString {
+            append("Belum punya akun? ")
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = DesignTokens.Colors.BrandPrimary)) {
+                append("Daftar")
+            }
         }
+        Text(
+            text = annotatedString,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Medium,
+                color = DesignTokens.Colors.TextSecondary
+            ),
+            modifier = Modifier.clickable { onBackClick() },
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+        }
+        } // End of outer Box wrapping Background and Content
     }
 }
 

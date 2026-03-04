@@ -33,11 +33,13 @@ class LoginViewModel @Inject constructor(
 
     fun updateUsername(username: String) {
         val formattedUsername = username.lowercase().replace(" ", "")
-        _uiState.update { it.copy(username = formattedUsername, usernameError = null) }
+        val error = if (formattedUsername.isNotEmpty() && formattedUsername.length < 3) "Nama panggilan minimal 3 huruf" else null
+        _uiState.update { it.copy(username = formattedUsername, usernameError = error) }
     }
 
     fun updatePassword(password: String) {
-        _uiState.update { it.copy(password = password, passwordError = null) }
+        val error = if (password.isNotEmpty() && password.length < 8) "Kata sandi minimal 8 karakter" else null
+        _uiState.update { it.copy(password = password, passwordError = error) }
     }
 
     fun submitLogin(rememberMe: Boolean) {
@@ -55,6 +57,9 @@ class LoginViewModel @Inject constructor(
         
         if (currentState.password.isBlank()) {
             _uiState.update { it.copy(passwordError = "Kata sandi tidak boleh kosong") }
+            hasError = true
+        } else if (currentState.password.length < 8) {
+            _uiState.update { it.copy(passwordError = "Kata sandi minimal 8 karakter") }
             hasError = true
         }
 

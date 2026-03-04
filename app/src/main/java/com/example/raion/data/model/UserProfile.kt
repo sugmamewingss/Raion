@@ -12,5 +12,17 @@ data class UserProfile(
     @SerialName("name")
     val name: String,
     @SerialName("birth_date")
-    val birthDate: String
+    val birthDate: String? = null,
+    @SerialName("total_xp")
+    val totalXp: Int = 0,
+    @SerialName("level")
+    val level: Int = 1,
+    @SerialName("coins")
+    val coins: Int = 0,
+    @SerialName("current_streak")
+    val currentStreak: Int = 0,
+    @SerialName("highest_streak")
+    val highestStreak: Int = 0,
+    @SerialName("last_active_date")
+    val lastActiveDate: String? = null
 )

@@ -1,6 +1,9 @@
 package com.example.raion.ui.features.auth.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -53,6 +56,7 @@ import com.example.raion.ui.theme.DesignTokens
 @Composable
 fun RegisterHeader(
     progress: Float,
+    showBackButton: Boolean = true,
     onBackClick: () -> Unit
 ) {
     val grayProgressBar = Color(0xFFD9D9D9)
@@ -65,29 +69,30 @@ fun RegisterHeader(
     )
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().height(48.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // IconButton secara alami memiliki touch padding gaib selebar 48dp di mana icon 24dp ada di tengahnya.
-        // Kita geser fisik pembungkusnya ke kiri pakai negative offset agar ujung gambar panah murni rata-kiri (Left Aligned),
-        // TANPA harus memangkas besaran touch area empuk klik jari milik si pengguna.
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.offset(x = (-12).dp)
+        AnimatedVisibility(
+            visible = showBackButton,
+            enter = expandHorizontally(),
+            exit = shrinkHorizontally()
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowBack, // Menggunakan Varian Rounded yang bersahabat
-                contentDescription = "Kembali",
-                tint = Color.Black,
-                modifier = Modifier.size(32.dp)
-            )
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier.offset(x = (-12).dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack, // Menggunakan Varian Rounded yang bersahabat
+                    contentDescription = "Kembali",
+                    tint = Color.Black,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
         }
 
         // Progress Bar Wrapper (Background Abu-abu)
-        // Ditaruh offset(-8.dp) untuk menariknya paksa mendekat ke ujung panah (merapatkan visual gap)
         Box(
             modifier = Modifier
-                .offset(x = (-8).dp)
                 .weight(1f)
                 .height(14.dp)
                 .alpha(progressAlpha)
@@ -185,9 +190,9 @@ fun DinoDialogBox(
             text = text,
             style = MaterialTheme.typography.titleMedium.copy(
                 color = Color.White,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.sp,
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 lineHeight = 26.sp
             ),
             textAlign = TextAlign.Center

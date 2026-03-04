@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.dp
 
 object DesignTokens {
     object Colors {
+        // Existing tokens
         val BrandPrimary = Color(0xFF68C2A7)
         val BrandSecondary = Color(0xFFF09D51)
         val BrandDark = Color(0xFF11533F)
@@ -14,6 +15,14 @@ object DesignTokens {
         val IndicatorInactive = Color(0xFFE0E0E0)
         val CardBackground = Color(0xFFFEFEEF)
         val StrokeDark = Color.Black.copy(alpha = 0.26f)
+        
+        // Home Screen UI Tokens
+        val CreamBackground = Color(0xFFFFFBE6)
+        val OrangePrimary = Color(0xFFF4A261)
+        val TealPrimary = Color(0xFF6AC9AB)
+        val DarkBackground = Color(0xFF3D3D4E)
+        val LightGrayBorder = Color(0xFFEFEFEF)
+        val RankGold = Color(0xFFFBB03B)
     }
 
     object Dimensions {
