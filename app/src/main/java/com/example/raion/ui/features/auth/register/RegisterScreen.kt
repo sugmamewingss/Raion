@@ -37,6 +37,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Person
@@ -75,6 +76,7 @@ import com.example.raion.R
 import com.example.raion.ui.features.auth.components.AuthPrimaryButton
 import com.example.raion.ui.features.auth.components.DinoDialogBox
 import com.example.raion.ui.features.auth.components.RegisterHeader
+import com.example.raion.ui.features.auth.components.WaveBackground
 import com.example.raion.ui.theme.DesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,12 +117,13 @@ fun RegisterScreen(
         topBar = {
             Column(
                 modifier = Modifier
-                    .background(DesignTokens.Colors.CardBackground)
+                    .background(Color.Transparent)
                     .padding(horizontal = DesignTokens.Dimensions.PaddingLarge, vertical = 16.dp)
             ) {
                 Spacer(modifier = Modifier.height(32.dp))
                 RegisterHeader(
                     progress = progress,
+                    showBackButton = step < 8,
                     onBackClick = {
                         if (step == 1) {
                             onBackToAuthSelection()
@@ -134,12 +137,12 @@ fun RegisterScreen(
         bottomBar = {
             Column(
                 modifier = Modifier
-                    .background(DesignTokens.Colors.CardBackground)
+                    .background(Color.Transparent)
                     .padding(horizontal = DesignTokens.Dimensions.PaddingLarge, vertical = 24.dp)
             ) {
                 val isButtonLoading = uiState.isLoading || uiState.isCheckingUsername
                 AuthPrimaryButton(
-                    text = if (uiState.isCheckingUsername) "MEMERIKSA..." else if (uiState.isLoading) "MEMPROSES..." else if(step == 8) "MASUK" else "SELANJUTNYA",
+                    text = if (uiState.isCheckingUsername) "MEMERIKSA..." else if (uiState.isLoading) "MEMPROSES..." else if(step == 8) "SELESAI" else "LANJUTKAN",
                     onClick = {
                         if (isButtonLoading) return@AuthPrimaryButton
                         if (step == 7) {
@@ -154,11 +157,14 @@ fun RegisterScreen(
                 )
             }
         },
-        containerColor = DesignTokens.Colors.CardBackground,
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
+    
+        Box(modifier = Modifier.fillMaxSize()) {
+            WaveBackground()
 
-        AnimatedContent(
+            AnimatedContent(
             targetState = step,
             modifier = Modifier
                 .fillMaxSize()
@@ -177,25 +183,27 @@ fun RegisterScreen(
             label = "register_step_animation"
         ) { currentStep ->
             val dialogText = when(currentStep) {
-                1 -> "Halo Teman kecil!\nNamaku Dino\nAku akan jadi\nsahabatmu"
-                2 -> "Yuk, kita siapkan\nakun baru untukmu!"
-                3 -> "Siapa nama kamu?"
-                4 -> "Kapan ulang\ntahunmu?"
-                5 -> "Wah nama yang bagus!\nSekarang buat\nNama Panggilan unik,\nya!"
+                1 -> "Halo, Teman!\nAku Gobi, sahabatmu di\npetualangan ini!"
+                2 -> "Ayo siapkan akunmu\nsebelum memulai\npetualangan seru!"
+                3 -> "Halo! Siapa nama kamu?"
+                4 -> "Kapan hari ulang\ntahunmu?"
+                5 -> "Wah nama yang bagus!\nSekarang buat\nNama Panggilan unik,\nkamu!"
                 6 -> "Ayo buat kata sandi\nrahasia!"
-                7 -> "Masukkan sandi yang\nbaru kamu buat"
-                8 -> "Yey! Semuanya\nSelesaii"
+                7 -> "Masukkan sandi yang\nbaru kamu buat."
+                8 -> "Yey! Semuanya\nSelesai!"
                 else -> ""
             }
 
             val dinoImageRes = when(currentStep) {
-                1, 2 -> R.drawable.dinonyapa
-                3, 4 -> R.drawable.dinobingung
-                5 -> R.drawable.dinonyapa
-                6 -> R.drawable.dinokunci
-                7 -> R.drawable.dinokunci2
-                8 -> R.drawable.dinoyeay
-                else -> R.drawable.dinonyapa
+                1 -> R.drawable.dino_menyapa
+                2 -> R.drawable.dino_aha
+                3 -> R.drawable.dino_tanya
+                4 -> R.drawable.dino_ultah
+                5 -> R.drawable.dino_cool
+                6 -> R.drawable.dino_ssst
+                7 -> R.drawable.dino_ssstt
+                8 -> R.drawable.dino_yeay
+                else -> R.drawable.dino_menyapa
             }
 
             Column(
@@ -216,14 +224,6 @@ fun RegisterScreen(
                     contentAlignment = Alignment.BottomCenter,
                     modifier = Modifier.fillMaxWidth().offset(y = (-20).dp)
                 ) {
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxWidth(0.40f)
-                            .height(30.dp)
-                            .offset(y = (-10).dp)
-                    ) {
-                        drawOval(color = Color.Black.copy(alpha = 0.12f))
-                    }
                     Image(
                         painter = painterResource(id = dinoImageRes),
                         contentDescription = "Dino Illustration",
@@ -241,7 +241,13 @@ fun RegisterScreen(
                     var showDatePicker by remember { mutableStateOf(false) }
 
                     if (showDatePicker && currentStep == 4) {
-                        val datePickerState = rememberDatePickerState()
+                        val datePickerState = rememberDatePickerState(
+                            selectableDates = object : SelectableDates {
+                                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                    return utcTimeMillis <= System.currentTimeMillis()
+                                }
+                            }
+                        )
                         DatePickerDialog(
                             onDismissRequest = { showDatePicker = false },
                             confirmButton = {
@@ -286,11 +292,11 @@ fun RegisterScreen(
                             },
                             placeholder = {
                                 val placeholderText = when(currentStep) {
-                                    3 -> "Ketik nama lengkapmu"
-                                    4 -> "Pilih tanggal lahirmu"
-                                    5 -> "Ketik nama panggilan rahasiamu"
-                                    6 -> "Minimal 8 karakter"
-                                    7 -> "Ketik ulang kata sandimu"
+                                    3 -> "Masukkan nama kamu"
+                                    4 -> "Masukkan tanggal lahir kamu"
+                                    5 -> "Masukkan nama panggilan kamu"
+                                    6 -> "Masukkan kata sandinya"
+                                    7 -> "Masukkan sekali lagi kata sandinya"
                                     else -> ""
                                 }
                                 Text(text = placeholderText, style = MaterialTheme.typography.bodyLarge)
@@ -346,7 +352,11 @@ fun RegisterScreen(
                                     else -> null
                                 }
                                 if (errorMsg != null) {
-                                    Text(text = errorMsg, color = MaterialTheme.colorScheme.error)
+                                    Text(
+                                        text = errorMsg, 
+                                        color = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.offset(x = (-16).dp)
+                                    )
                                 }
                             },
                             colors = OutlinedTextFieldDefaults.colors(
@@ -391,5 +401,6 @@ fun RegisterScreen(
                 }
             }
         }
+        } // End of outer Box wrapping Background and Content
     }
 }

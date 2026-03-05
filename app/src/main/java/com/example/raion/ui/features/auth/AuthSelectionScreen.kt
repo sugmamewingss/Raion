@@ -16,19 +16,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.raion.R
@@ -46,12 +45,40 @@ fun AuthSelectionScreen(
             .fillMaxSize()
             .background(DesignTokens.Colors.BrandPrimary) // Top half background
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 96.dp)
+                .align(Alignment.TopCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Petualangan Dimulai!",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    letterSpacing = 1.sp
+                ),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Masuk dan lanjutkan perjalananmu jadi\npahlawan lingkungan!",
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White,
+                    lineHeight = 20.sp
+                ),
+                textAlign = TextAlign.Center
+            )
+        }
+
         // Inner Box acting as the layout anchor for the bottom card
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .fillMaxSize(fraction = 0.72f) // White card takes up bottom 72%
+                .fillMaxSize(fraction = 0.42f) // White card takes up bottom 42%
         ) {
             // Main Content Container (White/Cream bottom half)
             Column(
@@ -64,67 +91,47 @@ fun AuthSelectionScreen(
             ) {
             
             // Push content down slightly from the top edge
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Typography Section
-            Text(
-                text = "Selamat Datang",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.Black
-            )
-            
-            Text(
-                text = "Sahabat Dino!",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = DesignTokens.Colors.BrandSecondary
-            )
-
-            // Center Illustration (Placeholder for Trash Can)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f), // Takes up available space between text and buttons
-                contentAlignment = Alignment.Center
-            ) {
-                // val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.trash_animate))
-                val composition by rememberLottieComposition(LottieCompositionSpec.Asset("trash_animate.lottie"))
-                val progress by animateLottieCompositionAsState(
-                    composition = composition,
-                    iterations = LottieConstants.IterateForever
-                )
-
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    modifier = Modifier.size(240.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(64.dp))
 
             // Buttons Section
             AuthPrimaryButton(
                 text = "MASUK",
-                onClick = onLoginClick
+                onClick = onLoginClick,
+                modifier = Modifier.fillMaxWidth()
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
             AuthSecondaryButton(
                 text = "BUAT AKUN",
-                onClick = onRegisterClick
+                onClick = onRegisterClick,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            // Footer Version Text
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.weight(1f))
+
+            val annotatedString = buildAnnotatedString {
+                append("Dengan melanjutkan, kamu menyetujui\n")
+                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color.Black)) {
+                    append("Syarat & Ketentuan")
+                }
+                append(" serta ")
+                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color.Black)) {
+                    append("Kebijakan Privasi")
+                }
+                append(" kami.")
+            }
             Text(
-                text = "v e r s i o n   1 . 0",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.Gray,
-                letterSpacing = 2.sp,
-                fontWeight = FontWeight.Medium
+                text = annotatedString,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = DesignTokens.Colors.TextSecondary
+                ),
+                textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(24.dp))
+
+            // Bottom padding for the card before Dino peeks
+            Spacer(modifier = Modifier.height(32.dp))
         }
 
         // Peeking Dino Illustration - Placed inside the inner Box so its TopCenter is the card's top edge
@@ -134,7 +141,7 @@ fun AuthSelectionScreen(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-176.7f).dp) // The offset is now independent of screen height, only relative to the dino's size!
+                    .offset(y = (-176.7f).dp) // Exact mathematical offset to make claws rest on the edge
                     .size(240.dp)
             )
         }

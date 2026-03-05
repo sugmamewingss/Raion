@@ -39,7 +39,8 @@ class RegisterViewModel @Inject constructor(
     val uiState: StateFlow<RegisterState> = _uiState.asStateFlow()
 
     fun updateName(name: String) {
-        _uiState.update { it.copy(name = name, nameError = null) }
+        val error = if (name.isNotEmpty() && name.length < 3) "Nama minimal 3 karakter" else null
+        _uiState.update { it.copy(name = name, nameError = error) }
     }
 
     fun updateBirthDate(birthDate: String) {
@@ -48,15 +49,18 @@ class RegisterViewModel @Inject constructor(
 
     fun updateUsername(username: String) {
         val formatted = username.lowercase().replace(" ", "")
-        _uiState.update { it.copy(username = formatted, usernameError = null) }
+        val error = if (formatted.isNotEmpty() && formatted.length < 3) "Nama panggilan minimal 3 huruf" else null
+        _uiState.update { it.copy(username = formatted, usernameError = error) }
     }
 
     fun updatePassword(password: String) {
-        _uiState.update { it.copy(password = password, passwordError = null) }
+        val error = if (password.isNotEmpty() && password.length < 8) "Kata sandi minimal 8 karakter" else null
+        _uiState.update { it.copy(password = password, passwordError = error) }
     }
 
     fun updateConfirmPassword(confirmPassword: String) {
-        _uiState.update { it.copy(confirmPassword = confirmPassword, confirmPasswordError = null) }
+        val error = if (confirmPassword.isNotEmpty() && confirmPassword != _uiState.value.password) "Kata sandi tidak cocok!" else null
+        _uiState.update { it.copy(confirmPassword = confirmPassword, confirmPasswordError = error) }
     }
 
     private val _currentStep = MutableStateFlow(1)
