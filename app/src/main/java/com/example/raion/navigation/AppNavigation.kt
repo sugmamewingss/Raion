@@ -2,11 +2,15 @@ package com.example.raion.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.lifecycle.Lifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.raion.data.repository.AuthRepository
 import com.example.raion.ui.features.auth.AuthSelectionScreen
 import com.example.raion.ui.features.auth.LoginScreen
 import com.example.raion.ui.features.auth.LoginViewModel
@@ -81,6 +85,12 @@ fun AppNavigation() {
                             popUpTo("auth_selection") { inclusive = true }
                         }
                     }
+                },
+                // Alfi: "Belum punya akun?" goes directly to register
+                onRegisterClick = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("register")
+                    }
                 }
             )
         }
@@ -104,10 +114,17 @@ fun AppNavigation() {
             )
         }
 
-        composable("home") { backStackEntry ->
+        // ===== HOME: Fade Transition (from Alfi) + Optimistic UI (from HEAD) =====
+        composable(
+            "home",
+            enterTransition = { fadeIn(animationSpec = tween(400)) },
+            exitTransition = { fadeOut(animationSpec = tween(300)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(400)) },
+            popExitTransition = { fadeOut(animationSpec = tween(300)) }
+        ) { backStackEntry ->
             val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel()
 
-            // Optimistic UI: observe mission result data (not a boolean flag)
+            // HEAD: Optimistic UI — observe mission result data
             val gainedXpFlow = backStackEntry.savedStateHandle.getStateFlow("mission_gained_xp", -1)
             androidx.compose.runtime.LaunchedEffect(Unit) {
                 gainedXpFlow.collect { xp ->
@@ -141,6 +158,7 @@ fun AppNavigation() {
             )
         }
 
+        // ===== MISSION: HEAD's single-screen wizard with backend integration =====
         composable("mission") { backStackEntry ->
             com.example.raion.ui.features.mission.MissionScreen(
                 onBackWithResult = { gainedXp, gainedCoins, newProgress, isComplete ->
@@ -152,6 +170,23 @@ fun AppNavigation() {
                             set("mission_new_progress", newProgress)
                             set("mission_is_complete", isComplete)
                         }
+                        navController.popBackStack()
+                    }
+                }
+            )
+        }
+
+        // ===== UNDER DEVELOPMENT: Slide Horizontal (from Alfi) =====
+        composable(
+            "under_development",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            com.example.raion.ui.features.mission.UnderDevelopmentScreen(
+                onBackClick = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
                     }
                 }
