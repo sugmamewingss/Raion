@@ -36,6 +36,8 @@ data class HomeUiState(
     val xpForNextLevel: Int = 100, // Syarat batas atas (Next Level)
     val streak: Int = 0,
     val incompleteTasks: List<String> = emptyList(),
+    val organicCount: Int = 0,
+    val inorganicCount: Int = 0,
     val leaderboard: List<LeaderboardEntry> = emptyList(),
     val shopItems: List<ShopItemData> = listOf(
         ShopItemData("20 Poin"),
@@ -80,6 +82,7 @@ class HomeViewModel @Inject constructor(
             val profileResult = authRepository.getUserProfile()
             val leaderboardResult = authRepository.getTopPlayerProfiles(3)
             val tasksResult = authRepository.getIncompleteDailyTasks()
+            val wasteCountsResult = authRepository.getOrganicInorganicCounts()
             
             val fetchedPlayers = leaderboardResult.getOrNull()?.map { user ->
                 val name = user.name.split(" ").firstOrNull()?.replaceFirstChar { 
@@ -124,6 +127,9 @@ class HomeViewModel @Inject constructor(
                     val currentBaseXp = (profile.level - 1) * 100
                     val nextBaseXp = profile.level * 100
 
+                    val incompleteTasks = tasksResult.getOrNull()?.map { it.title } ?: emptyList()
+                    val (organic, inorganic) = wasteCountsResult.getOrNull() ?: Pair(0, 0)
+
                     _uiState.update { 
                         it.copy(
                             userName = firstName,
@@ -133,8 +139,10 @@ class HomeViewModel @Inject constructor(
                             xpForCurrentLevel = currentBaseXp,
                             xpForNextLevel = nextBaseXp,
                             streak = profile.currentStreak,
-                            incompleteTasks = tasksResult.getOrNull()?.map { it.title } ?: emptyList(),
-                            leaderboard = newLeaderboard
+                            incompleteTasks = incompleteTasks,
+                            leaderboard = newLeaderboard,
+                            organicCount = organic,
+                            inorganicCount = inorganic
                         ) 
                     }
                 }

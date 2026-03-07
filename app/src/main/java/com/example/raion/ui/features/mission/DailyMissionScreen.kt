@@ -1,9 +1,11 @@
 package com.example.raion.ui.features.mission
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -11,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,16 +25,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.raion.R
 import com.example.raion.ui.theme.DesignTokens
 
+enum class DailyMissionState {
+    IN_PROGRESS,
+    TRUCK_READY,
+    MYSTERY_BOX_READY
+}
+
 @Composable
 fun DailyMissionScreen(
+    viewModel: DailyMissionViewModel = hiltViewModel(),
+    missionState: DailyMissionState = DailyMissionState.IN_PROGRESS,
     onBackClick: () -> Unit,
-    onNavigateNext: () -> Unit = {}
+    onNavigateNext: () -> Unit = {},
+    onTruckFinishClick: () -> Unit = {},
+    onClaimRewardClick: () -> Unit = {}
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
-        containerColor = Color(0xFFFAF9F0) // Background kuning gading
+        containerColor = Color(0xFFFAF9F0)
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -39,14 +56,43 @@ fun DailyMissionScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = DesignTokens.Dimensions.PaddingLarge)
         ) {
+            // Optional: Back icon if you want to place it somewhere at the top
+            // Since there was none in the Scaffold version, I'll keep the profile at the top
             Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingMedium))
-            MissionTopProfile()
+            MissionTopProfile(
+                userName = uiState.userName,
+                schoolInfo = uiState.schoolInfo,
+                level = uiState.level,
+                rank = uiState.rank,
+                title = uiState.title,
+                coins = uiState.coins,
+                xpProgressRatio = uiState.xpProgressRatio,
+                xpProgressText = uiState.xpProgressText
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             GobiBeraksiBanner()
             
             Spacer(modifier = Modifier.height(24.dp))
-            MissionTrashSection(onNavigateNext = onNavigateNext)
+            if (missionState == DailyMissionState.TRUCK_READY) {
+                MissionTruckSection(
+                    completedCount = uiState.completedMissionCount,
+                    totalTarget = uiState.totalMissionTarget,
+                    onFinishClick = onTruckFinishClick
+                )
+            } else {
+                MissionTrashSection(
+                    completedCount = uiState.completedMissionCount,
+                    totalTarget = uiState.totalMissionTarget,
+                    onNavigateNext = onNavigateNext
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            MysteryBoxSection(
+                isReady = missionState == DailyMissionState.MYSTERY_BOX_READY,
+                onClaimRewardClick = onClaimRewardClick
+            )
             
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -55,29 +101,39 @@ fun DailyMissionScreen(
 
 // --- 1. Mission Top Profile ---
 @Composable
-fun MissionTopProfile() {
+fun MissionTopProfile(
+    userName: String,
+    schoolInfo: String,
+    level: Int,
+    rank: Int,
+    title: String,
+    coins: Int,
+    xpProgressRatio: Float,
+    xpProgressText: String
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
-        // Kotak Avatar Kiri
+        // Kotak Avatar Kiri — lebih tinggi sesuai desain
         Box(
             modifier = Modifier
-                .width(70.dp)
+                .width(75.dp)
                 .background(Color.White, RoundedCornerShape(8.dp))
                 .border(2.dp, Color(0xFF2C4331), RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Avatar Dino
+                // Avatar Dino — lebih besar
                 Image(
                     painter = painterResource(id = R.drawable.dinomini),
                     contentDescription = "Avatar",
                     modifier = Modifier
-                        .size(54.dp)
-                        .padding(top = 4.dp),
+                        .size(68.dp)
+                        .padding(top = 4.dp, start = 2.dp, end = 2.dp),
                     contentScale = ContentScale.Fit
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 // Level Banner Bawah
                 Box(
                     modifier = Modifier
@@ -86,29 +142,36 @@ fun MissionTopProfile() {
                             Color(0xFF2C4331), 
                             RoundedCornerShape(bottomStart = 6.dp, bottomEnd = 6.dp)
                         )
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 5.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("LEVEL 10", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        "LEVEL $level",
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
-        // Info Kanan (Nama, Kategori, Progress)
+        // Info Kanan (Nama, Sekolah, Progress)
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "Kevin Aditya Pratama",
+                userName,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.Black
             )
-            Text(
-                "3 - Sekolah Dasar",
-                fontSize = 12.sp,
-                color = Color.DarkGray
-            )
+            if (schoolInfo.isNotBlank()) {
+                Text(
+                    schoolInfo,
+                    fontSize = 12.sp,
+                    color = Color.DarkGray
+                )
+            }
             
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -124,7 +187,7 @@ fun MissionTopProfile() {
                     color = Color.White
                 ) {
                     Text(
-                        "Peringkat 5",
+                        "Peringkat $rank",
                         color = Color(0xFF50B498),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -132,14 +195,14 @@ fun MissionTopProfile() {
                     )
                 }
                 
-                // Si Paling Tertib Pill
+                // Title Pill
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     border = BorderStroke(1.dp, Color(0xFF4A7A64)),
                     color = Color.White
                 ) {
                     Text(
-                        "Si Paling Tertib",
+                        title,
                         color = Color(0xFF4A7A64),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -164,7 +227,7 @@ fun MissionTopProfile() {
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "100",
+                            "$coins",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFF8C6200)
@@ -188,13 +251,13 @@ fun MissionTopProfile() {
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .fillMaxWidth(0.55f) // 55%
+                            .fillMaxWidth(xpProgressRatio.coerceIn(0f, 1f))
                             .background(DesignTokens.Colors.OrangePrimary, CircleShape)
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    "55/100 XP",
+                    xpProgressText,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.DarkGray
@@ -210,13 +273,13 @@ fun GobiBeraksiBanner() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp) // Ukuran height ditambahkan agar Dino bisa off-bounds
+            .height(160.dp)
     ) {
         // Container Utama Putih
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 20.dp) // Mengamankan ruang bawah untuk sayap dino offset
+                .padding(bottom = 20.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(Color.White)
                 .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
@@ -237,7 +300,7 @@ fun GobiBeraksiBanner() {
                 )
             }
             
-            // Area Konten Putih (kosong, diisi tumpukan Box absolute)
+            // Area Konten Putih
             Box(modifier = Modifier.fillMaxWidth().height(100.dp))
         }
 
@@ -259,13 +322,14 @@ fun GobiBeraksiBanner() {
             )
         }
         
-        // 2. Kilau kuning kecil di atas balon
-        // Memakai text kuning (simplified) atau bisa digambar canvas sederhana, kita pakai unicode
-        Text(
-            "✨", 
-            fontSize = 32.sp, 
-            color = Color(0xFFFFD54F),
-            modifier = Modifier.offset(x = 24.dp, y = 30.dp)
+        // 2. Percikan Cling di sebelah WoHoo!!!
+        Image(
+            painter = painterResource(id = R.drawable.cling1),
+            contentDescription = "Sparkle",
+            modifier = Modifier
+                .offset(x = 15.dp, y = 42.dp)
+                .size(30.dp),
+            contentScale = ContentScale.Fit
         )
 
         // 3. Super Dino Gambar (Offset kanan bawah)
@@ -275,7 +339,7 @@ fun GobiBeraksiBanner() {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 12.dp)
-                .offset(y = 10.dp) // Offset ke bawah keluar dari kotak putih
+                .offset(y = 10.dp)
                 .size(140.dp),
             contentScale = ContentScale.Fit
         )
@@ -284,7 +348,11 @@ fun GobiBeraksiBanner() {
 
 // --- 3. Mission Trash Section ---
 @Composable
-fun MissionTrashSection(onNavigateNext: () -> Unit = {}) {
+fun MissionTrashSection(
+    completedCount: Int = 0,
+    totalTarget: Int = 10,
+    onNavigateNext: () -> Unit = {}
+) {
     Column {
         // Header Orange "Ayo kumpulkan sampahmu!"
         Box(
@@ -301,7 +369,7 @@ fun MissionTrashSection(onNavigateNext: () -> Unit = {}) {
                     color = Color.White
                 ) {
                     Text(
-                        "0/5",
+                        "$completedCount/$totalTarget",
                         color = DesignTokens.Colors.OrangePrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
@@ -332,17 +400,30 @@ fun MissionTrashSection(onNavigateNext: () -> Unit = {}) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Balon Kata "Mana Sampahmu?"
-                Box(
-                    modifier = Modifier
-                        .background(DesignTokens.Colors.OrangePrimary, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        "Mana Sampahmu?",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                // Balon Kata "Mana Sampahmu?" dengan Cling
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp) // ruang untuk cling
+                            .background(DesignTokens.Colors.OrangePrimary, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            "Mana Sampahmu?",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                    // Cling2 di sebelah kanan "Mana Sampahmu?"
+                    Image(
+                        painter = painterResource(id = R.drawable.cling2),
+                        contentDescription = "Sparkle",
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 0.dp, y = (-8).dp)
+                            .size(28.dp),
+                        contentScale = ContentScale.Fit
                     )
                 }
                 
@@ -363,23 +444,25 @@ fun MissionTrashSection(onNavigateNext: () -> Unit = {}) {
                         contentScale = ContentScale.Fit
                     )
                     
-                    // Shadow Oval Tong Sampah
-                    Box(
+                    // Shadow Ellipse Tong Sampah (Canvas)
+                    Canvas(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 12.dp)
-                            .width(100.dp)
-                            .height(14.dp)
-                            .background(Color(0xFF9AACAA), RoundedCornerShape(50))
-                    )
+                            .padding(bottom = 8.dp)
+                            .size(width = 110.dp, height = 16.dp)
+                    ) {
+                        drawOval(
+                            color = Color(0xFF7B9695).copy(alpha = 0.45f)
+                        )
+                    }
                     
-                    // Tong Sampah Utama
+                    // Tong Sampah Utama (di atas shadow, sedikit lebih turun)
                     Image(
                         painter = painterResource(id = R.drawable.trashcan),
                         contentDescription = "Trash Can",
                         modifier = Modifier
                             .size(160.dp)
-                            .padding(bottom = 8.dp),
+                            .offset(y = 7.dp),
                         contentScale = ContentScale.Fit
                     )
                     
@@ -396,21 +479,261 @@ fun MissionTrashSection(onNavigateNext: () -> Unit = {}) {
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Tombol Mulai Kumpulkan
-                Button(
-                    onClick = onNavigateNext,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF50B498)),
-                    shape = RoundedCornerShape(8.dp),
+                // Tombol Mulai Kumpulkan dengan Shadow Neo-Brutalism
+                Box(
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
-                        .height(48.dp)
+                        .height(52.dp)
+                        .background(Color(0xFF2C4331), RoundedCornerShape(8.dp))
+                        .padding(bottom = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF50B498), RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onNavigateNext() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Mulai Kumpulkan!",
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// --- 4. Mystery Box Section ---
+@Composable
+fun MysteryBoxSection(
+    isReady: Boolean = false,
+    onClaimRewardClick: () -> Unit = {}
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+            .padding(vertical = 20.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            // Box Image with Ellipse Shadow
+            Box(
+                modifier = Modifier.size(80.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Shadow Ellipse di bawah box
+                Canvas(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 2.dp)
+                        .size(width = 60.dp, height = 12.dp)
+                ) {
+                    drawOval(
+                        color = Color(0xFF7B9695).copy(alpha = 0.4f)
+                    )
+                }
+                // Box Image (di atas shadow, sedikit lebih turun)
+                val boxImageRes = if (isReady) R.drawable.boxopen else R.drawable.box
+                Image(
+                    painter = painterResource(id = boxImageRes),
+                    contentDescription = "Mystery Box",
+                    modifier = Modifier
+                        .size(70.dp)
+                        .offset(y = 5.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column {
+                if (!isReady) {
+                    // Default / Locked state: "Mistery Box!!" menggunakan orange pucat
+                    Box(
+                        modifier = Modifier
+                            .height(42.dp)
+                            .background(Color(0xFFE5A87B), RoundedCornerShape(8.dp)) // subtle shadow
+                            .padding(bottom = 3.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .background(Color(0xFFFFF6ED), RoundedCornerShape(8.dp))
+                                .border(1.dp, DesignTokens.Colors.OrangePrimary, RoundedCornerShape(8.dp))
+                                .padding(horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Mistery Box!!",
+                                color = DesignTokens.Colors.OrangePrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
+                    }
+                } else {
+                    // Ready / Unlocked state: "Mistery Box!!" (orange pucat) + "Dapatkan!" button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(42.dp)
+                            .background(Color(0xFFFFF6ED), RoundedCornerShape(8.dp))
+                            .border(1.dp, DesignTokens.Colors.OrangePrimary, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Mistery Box!!",
+                            color = DesignTokens.Colors.OrangePrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(42.dp)
+                            .background(Color(0xFFC05900), RoundedCornerShape(8.dp))
+                            .padding(bottom = 3.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth()
+                                .background(DesignTokens.Colors.OrangePrimary, RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFFC05900), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onClaimRewardClick() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Dapatkan!",
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 15.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// --- 5. Mission Truck Section (for TRUCK_READY state) ---
+@Composable
+fun MissionTruckSection(
+    completedCount: Int = 10,
+    totalTarget: Int = 10,
+    onFinishClick: () -> Unit = {}
+) {
+    Column {
+        // Header Orange "Sampah berhasil terkumpul!"
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFFFF6ED), RoundedCornerShape(8.dp))
+                .border(1.dp, DesignTokens.Colors.OrangePrimary, RoundedCornerShape(8.dp))
+                .padding(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    border = BorderStroke(1.dp, DesignTokens.Colors.OrangePrimary),
+                    color = Color.White
                 ) {
                     Text(
-                        "Mulai Kumpulkan!",
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp
+                        "$completedCount/$totalTarget",
+                        color = DesignTokens.Colors.OrangePrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    "Sampah berhasil terkumpul!",
+                    color = DesignTokens.Colors.OrangePrimary,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Card Area Hijau Tosca
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFE2F0EA), RoundedCornerShape(12.dp))
+                .border(1.dp, Color(0xFF4A7A64), RoundedCornerShape(12.dp))
+                .padding(vertical = 24.dp, horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Truck Image
+                Image(
+                    painter = painterResource(id = R.drawable.truck),
+                    contentDescription = "Garbage Truck",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .padding(bottom = 16.dp),
+                    contentScale = ContentScale.Fit
+                )
+                
+                // Info Text
+                Text(
+                    text = "Tahukah kamu? Setelah kita membuang sampah dengan benar, truk sampah akan mengumpulkannya untuk dibawa ke tempat pengolahan! \uD83D\uDE9A♻️", // 🚛♻️
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 16.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Selesai Button with Shadow Neo-Brutalism
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(52.dp)
+                        .background(Color(0xFF2C4331), RoundedCornerShape(8.dp))
+                        .padding(bottom = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(DesignTokens.Colors.TealPrimary, RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onFinishClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Selesai!",
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
         }

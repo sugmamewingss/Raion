@@ -67,12 +67,12 @@ fun TrashSelectionScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.superdinohead), // Assuming superdino1 or dinomini
+                                painter = painterResource(id = R.drawable.superdinohead),
                                 contentDescription = "Dino Avatar",
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop
+                                    .size(71.dp)
+                                    .padding(2.dp),
+                                contentScale = ContentScale.Fit
                             )
                         }
 

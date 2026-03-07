@@ -114,6 +114,8 @@ fun HomeTabContent(uiState: HomeUiState, onNavigateToDailyMission: () -> Unit = 
         Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
         DailyTaskSection(
             tasks = uiState.incompleteTasks,
+            organicCount = uiState.organicCount,
+            inorganicCount = uiState.inorganicCount,
             onMulaiMisi = onNavigateToDailyMission
         )
         
@@ -362,6 +364,8 @@ fun TopProfileSection(
 @Composable
 fun DailyTaskSection(
     tasks: List<String>,
+    organicCount: Int = 0,
+    inorganicCount: Int = 0,
     onMulaiMisi: () -> Unit = {}
 ) {
     Text("Misi Gobi", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
@@ -382,8 +386,13 @@ fun DailyTaskSection(
                     Text("Misi yang belum terselesaikan :", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Memastikan ada task yang muncul (hardcode jika kosong)
-                    val displayTasks = if (tasks.isEmpty()) listOf("Membuang sampah") else tasks
+                    // Dua misi dinamis
+                    val organicLimit = 5
+                    val inorganicLimit = 5
+                    val displayTasks = listOf(
+                        "Buang sampah organik (${organicCount.coerceAtMost(organicLimit)}/$organicLimit)",
+                        "Buang sampah anorganik (${inorganicCount.coerceAtMost(inorganicLimit)}/$inorganicLimit)"
+                    )
                     displayTasks.forEach { task ->
                         DailyTaskItem(task)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -886,29 +895,36 @@ fun ShopItem(
         }
         Spacer(modifier = Modifier.height(10.dp))
         
-        // Kotak Harga
+        // Kotak Harga dengan Shadow Neo-Brutalism
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF50B498), RoundedCornerShape(6.dp)) // Teal color
-                .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(6.dp))
-                .padding(vertical = 8.dp),
-            contentAlignment = Alignment.Center
+                .height(38.dp)
+                .background(Color(0xFF2C4331), RoundedCornerShape(6.dp)) // Shadow gelap di bawah
+                .padding(bottom = 3.dp) // Ketebalan shadow
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Gold Icon
-                Image(
-                    painter = painterResource(id = R.drawable.goldimage),
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = price,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF50B498), RoundedCornerShape(6.dp)) // Teal color
+                    .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(6.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Gold Icon
+                    Image(
+                        painter = painterResource(id = R.drawable.goldimage),
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = price,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
             }
         }
     }

@@ -78,7 +78,8 @@ import com.example.raion.ui.theme.RaionTheme
 fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {},
-    onLoginSubmit: () -> Unit = {}
+    onLoginSubmit: () -> Unit = {},
+    onRegisterClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var rememberMe by remember { mutableStateOf(false) }
@@ -334,7 +335,7 @@ fun LoginScreen(
                 fontWeight = FontWeight.Medium,
                 color = DesignTokens.Colors.TextSecondary
             ),
-            modifier = Modifier.clickable { onBackClick() },
+            modifier = Modifier.clickable { onRegisterClick() },
             textAlign = TextAlign.Center
         )
 
