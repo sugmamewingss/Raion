@@ -24,5 +24,7 @@ data class UserProfile(
     @SerialName("highest_streak")
     val highestStreak: Int = 0,
     @SerialName("last_active_date")
-    val lastActiveDate: String? = null
+    val lastActiveDate: String? = null,
+    @SerialName("last_mission_completed_date")
+    val lastMissionCompletedDate: String? = null
 )

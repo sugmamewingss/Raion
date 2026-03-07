@@ -11,14 +11,13 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
-import android.util.Log
 import javax.inject.Singleton
-import com.example.raion.data.model.MasterTask
-import com.example.raion.data.model.UserProfile
-import com.example.raion.data.model.UserTask
-import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.Order
 
+/**
+ * AuthRepository — HANYA menangani autentikasi.
+ * Login, register, logout, session check, dan cek username.
+ * Semua fungsi "game data" ada di HomeRepository.
+ */
 @Singleton
 class AuthRepository @Inject constructor(
     private val supabase: SupabaseClient
@@ -55,7 +54,7 @@ class AuthRepository @Inject constructor(
                 birthDate
             }
 
-            val userSession = supabase.auth.signUpWith(Email) {
+            supabase.auth.signUpWith(Email) {
                 email = dummyEmail
                 this.password = password
 
@@ -100,86 +99,13 @@ class AuthRepository @Inject constructor(
         return try {
             val session = supabase.auth.currentSessionOrNull()
             val user = session?.user
-            val fullName = user?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: "Sobat Raion"
+            val fullName = user?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: "Sobat Gobi"
             
-            // Mengambil kata pertama (nama panggilan)
-            fullName.split(" ").firstOrNull()?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: "Sobat Raion"
+            fullName.split(" ").firstOrNull()?.replaceFirstChar { 
+                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() 
+            } ?: "Sobat Gobi"
         } catch (e: Exception) {
-            "Sobat Raion"
-        }
-    }
-
-    suspend fun getUserProfile(): Result<UserProfile> {
-        return try {
-            val session = supabase.auth.currentSessionOrNull()
-            val userId = session?.user?.id ?: throw Exception("User not logged in")
-
-            val profile = supabase.postgrest["profiles"]
-                .select(Columns.ALL) {
-                    filter { eq("id", userId) }
-                }.decodeSingle<UserProfile>()
-
-            Result.success(profile)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun updateDailyStreak(): Result<Unit> {
-        return try {
-            val session = supabase.auth.currentSessionOrNull()
-            val userId = session?.user?.id ?: throw Exception("User not logged in")
-
-            supabase.postgrest.rpc(
-                function = "update_daily_streak",
-                parameters = buildJsonObject { put("p_user_id", userId) }
-            )
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getTopPlayerProfiles(limit: Long = 3): Result<List<UserProfile>> {
-        return try {
-            val profiles = supabase.postgrest["profiles"]
-                .select(Columns.ALL) {
-                    order("total_xp", Order.DESCENDING)
-                    limit(limit)
-                }.decodeList<UserProfile>()
-            Result.success(profiles)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getIncompleteDailyTasks(): Result<List<MasterTask>> {
-        return try {
-            val session = supabase.auth.currentSessionOrNull()
-            val userId = session?.user?.id ?: throw Exception("User not logged in")
-
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val todayStr = dateFormat.format(java.util.Date())
-
-            val activeTasks = supabase.postgrest["master_tasks"]
-                .select(Columns.ALL) {
-                    filter { eq("is_active", true) }
-                }.decodeList<MasterTask>()
-                
-            val userTasksToday = supabase.postgrest["user_tasks"]
-                .select(Columns.ALL) {
-                    filter { 
-                        eq("profile_id", userId) 
-                        eq("completed_date", todayStr)
-                    }
-                }.decodeList<UserTask>()
-                
-            val completedTaskIds = userTasksToday.map { it.masterTaskId }
-            val incompleteTasks = activeTasks.filter { it.id !in completedTaskIds }
-            
-            Result.success(incompleteTasks)
-        } catch (e: Exception) {
-            Result.failure(e)
+            "Sobat Gobi"
         }
     }
 }

@@ -106,6 +106,24 @@ fun AppNavigation() {
 
         composable("home") { backStackEntry ->
             val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel()
+
+            // Optimistic UI: observe mission result data (not a boolean flag)
+            val gainedXpFlow = backStackEntry.savedStateHandle.getStateFlow("mission_gained_xp", -1)
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                gainedXpFlow.collect { xp ->
+                    if (xp >= 0) {
+                        val coins = backStackEntry.savedStateHandle.get<Int>("mission_gained_coins") ?: 0
+                        val progress = backStackEntry.savedStateHandle.get<Int>("mission_new_progress") ?: 0
+                        val isComplete = backStackEntry.savedStateHandle.get<Boolean>("mission_is_complete") ?: false
+
+                        homeViewModel.applyMissionResult(xp, coins, progress, isComplete)
+
+                        // Clear the result so it doesn't re-apply
+                        backStackEntry.savedStateHandle["mission_gained_xp"] = -1
+                    }
+                }
+            }
+
             HomeScreen(
                 viewModel = homeViewModel,
                 onNavigateOut = {
@@ -113,6 +131,28 @@ fun AppNavigation() {
                         navController.navigate("auth_selection") {
                             popUpTo("home") { inclusive = true }
                         }
+                    }
+                },
+                onStartMission = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("mission")
+                    }
+                }
+            )
+        }
+
+        composable("mission") { backStackEntry ->
+            com.example.raion.ui.features.mission.MissionScreen(
+                onBackWithResult = { gainedXp, gainedCoins, newProgress, isComplete ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        // Pass result data to home for optimistic update
+                        navController.previousBackStackEntry?.savedStateHandle?.apply {
+                            set("mission_gained_xp", gainedXp)
+                            set("mission_gained_coins", gainedCoins)
+                            set("mission_new_progress", newProgress)
+                            set("mission_is_complete", isComplete)
+                        }
+                        navController.popBackStack()
                     }
                 }
             )

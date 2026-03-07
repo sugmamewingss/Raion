@@ -1,5 +1,8 @@
 package com.example.raion.ui.features.auth
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +19,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -40,6 +50,34 @@ fun AuthSelectionScreen(
     onLoginClick: () -> Unit = {},
     onRegisterClick: () -> Unit = {}
 ) {
+    var isTransitioning by rememberSaveable { mutableStateOf(false) }
+    var targetAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    
+    // Auto-reverse when returning from backstack
+    LaunchedEffect(Unit) {
+        if (isTransitioning) {
+            isTransitioning = false
+            targetAction = null
+        }
+    }
+    
+    val cardHeightFraction by animateFloatAsState(
+        targetValue = if (isTransitioning) 1.0f else 0.42f,
+        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+        finishedListener = {
+            if (isTransitioning) {
+                targetAction?.invoke()
+            }
+        },
+        label = "cardHeightFraction"
+    )
+    
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (isTransitioning) 0f else 1f,
+        animationSpec = tween(durationMillis = 300),
+        label = "contentAlpha"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -49,6 +87,7 @@ fun AuthSelectionScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 96.dp)
+                .alpha(contentAlpha)
                 .align(Alignment.TopCenter),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -78,14 +117,21 @@ fun AuthSelectionScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .fillMaxSize(fraction = 0.42f) // White card takes up bottom 42%
+                .fillMaxSize(fraction = cardHeightFraction) // Animates to full screen
         ) {
-            // Main Content Container (White/Cream bottom half)
-            Column(
+            // Background Container (White/Cream) - Does NOT fade!
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(topStart = DesignTokens.Dimensions.CornerRadiusLarge, topEnd = DesignTokens.Dimensions.CornerRadiusLarge))
                     .background(DesignTokens.Colors.CardBackground)
+            )
+
+            // Main Content Container (Fades Out)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(contentAlpha)
                     .padding(horizontal = DesignTokens.Dimensions.PaddingLarge),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -96,7 +142,12 @@ fun AuthSelectionScreen(
             // Buttons Section
             AuthPrimaryButton(
                 text = "MASUK",
-                onClick = onLoginClick,
+                onClick = { 
+                    if (!isTransitioning) {
+                        isTransitioning = true
+                        targetAction = onLoginClick
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -104,7 +155,12 @@ fun AuthSelectionScreen(
             
             AuthSecondaryButton(
                 text = "BUAT AKUN",
-                onClick = onRegisterClick,
+                onClick = {
+                    if (!isTransitioning) {
+                        isTransitioning = true
+                        targetAction = onRegisterClick
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
