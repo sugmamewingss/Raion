@@ -57,7 +57,7 @@ fun AppNavigation() {
             AuthSelectionScreen(
                 onLoginClick = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("home")
+                        navController.navigate("login")
                     }
                 },
                 onRegisterClick = {
