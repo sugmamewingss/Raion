@@ -3,6 +3,8 @@ package com.example.raion.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.lifecycle.Lifecycle
@@ -154,6 +156,11 @@ fun AppNavigation() {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.navigate("mission")
                     }
+                },
+                onNavigateToEditProfile = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("edit_profile")
+                    }
                 }
             )
         }
@@ -194,6 +201,33 @@ fun AppNavigation() {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
                     }
+                }
+            )
+        }
+
+        // ===== EDIT PROFILE: Slide Horizontal =====
+        composable(
+            "edit_profile",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            val homeEntry = remember(backStackEntry) {
+                navController.getBackStackEntry("home")
+            }
+            val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel(homeEntry)
+            val uiState by homeViewModel.uiState.collectAsState()
+
+            com.example.raion.ui.features.profile.EditProfileScreen(
+                initialNickname = uiState.username,
+                initialFullName = uiState.fullName,
+                initialBirthDate = uiState.birthDate,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onSaveSuccess = {
+                    homeViewModel.refreshData()
                 }
             )
         }

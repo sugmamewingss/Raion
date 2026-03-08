@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.raion.R
+import com.example.raion.ui.features.profile.ProfileScreen
 import com.example.raion.ui.theme.DesignTokens
 import kotlinx.coroutines.launch
 
@@ -46,7 +47,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateOut: () -> Unit,
-    onStartMission: () -> Unit = {}
+    onStartMission: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit
 ) {
     val isLoggedOut by viewModel.isLoggedOut.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -74,7 +76,6 @@ fun HomeScreen(
         // Container color di override di Theme.kt namun diset ulang di sini untuk safety margin jika diperlukan
         containerColor = DesignTokens.Colors.CreamBackground 
     ) { paddingValues ->
-        // HorizontalPager memungkinkan user menswipe ke kanan/kiri
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
@@ -85,7 +86,11 @@ fun HomeScreen(
                 0 -> HomeTabContent(uiState = uiState, onStartMission = onStartMission)
                 1 -> DummyPage("Halaman Journey/Buku")
                 2 -> DummyPage("Halaman Poin/Dino Kacamata")
-                3 -> DummyPage("Halaman Profil/Dino Avatar")
+                3 -> ProfileScreen(
+                    uiState = uiState,
+                    onLogoutClick = viewModel::logout,
+                    onEditProfileClick = onNavigateToEditProfile
+                )
             }
         }
     }

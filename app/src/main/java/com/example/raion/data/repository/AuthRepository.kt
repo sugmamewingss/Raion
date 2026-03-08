@@ -129,6 +129,47 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun updateUserProfile(name: String, birthDate: String): Result<Unit> {
+        return try {
+            val session = supabase.auth.currentSessionOrNull()
+            val userId = session?.user?.id ?: throw Exception("User not logged in")
+
+            val inputFormat = SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("id-ID"))
+            val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            
+            val parsedDate = try {
+                val d = inputFormat.parse(birthDate)
+                if (d != null) outputFormat.format(d) else birthDate
+            } catch (e: Exception) {
+                birthDate
+            }
+
+            // 1. Update Auth user (metadata only, we cannot change dummy email without verification)
+            supabase.auth.updateUser {
+                data = buildJsonObject {
+                    put("full_name", name)
+                    put("birth_date", parsedDate)
+                }
+            }
+
+            // 2. Update profiles table
+            supabase.postgrest["profiles"]
+                .update({
+                    set("name", name)
+                    set("birth_date", parsedDate)
+                }) {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "updateUserProfile error", e)
+            Result.failure(e)
+        }
+    }
+
     suspend fun updateDailyStreak(): Result<Unit> {
         return try {
             val session = supabase.auth.currentSessionOrNull()

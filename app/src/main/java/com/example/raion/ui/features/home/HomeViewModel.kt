@@ -21,7 +21,10 @@ import javax.inject.Inject
 
 data class HomeUiState(
     val isLoading: Boolean = true,
-    val userName: String = "Sobat",
+    val userName: String = "Sobat", // Used for "Halo, {First Name}!"
+    val username: String = "sobatgobi", // Used for "Nama Panggilan" in Edit Profile
+    val fullName: String = "Sobat Gobi",
+    val birthDate: String = "1 Januari 2010",
     val avatarId: Int = 1,
     val userLevel: Int = 1,
     val totalCoins: Int = 0,
@@ -154,6 +157,16 @@ class HomeViewModel @Inject constructor(
                     if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() 
                 } ?: profile.username
 
+                val formattedBirthDate = try {
+                    if (profile.birthDate != null) {
+                        val date = java.time.LocalDate.parse(profile.birthDate)
+                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("id", "ID"))
+                        date.format(formatter)
+                    } else "Belum diatur"
+                } catch (e: Exception) {
+                    profile.birthDate ?: "Belum diatur"
+                }
+
                 val todayStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
                 val completedTodayMissions = profile.lastMissionCompletedDate == todayStr 
                     || (missionsResult.isSuccess && missionsResult.getOrNull()?.isEmpty() == true)
@@ -162,6 +175,9 @@ class HomeViewModel @Inject constructor(
                     state.copy(
                         isLoading = false,
                         userName = firstName,
+                        username = profile.username,
+                        fullName = profile.name,
+                        birthDate = formattedBirthDate,
                         avatarId = 1,
                         userLevel = profile.level,
                         totalCoins = profile.coins,
