@@ -12,6 +12,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.raion.data.repository.AuthRepository
 import com.example.raion.ui.features.auth.AuthSelectionScreen
 import com.example.raion.ui.features.auth.LoginScreen
@@ -161,6 +163,11 @@ fun AppNavigation() {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.navigate("edit_profile")
                     }
+                },
+                onNavigateToStoryDetail = { episodeId ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("story_detail/$episodeId")
+                    }
                 }
             )
         }
@@ -228,6 +235,72 @@ fun AppNavigation() {
                 },
                 onSaveSuccess = {
                     homeViewModel.refreshData()
+                }
+            )
+        }
+
+        // ===== STORY DETAIL: Slide Horizontal =====
+        composable(
+            "story_detail/{episodeId}",
+            arguments = listOf(navArgument("episodeId") { type = NavType.IntType }),
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            val episodeId = backStackEntry.arguments?.getInt("episodeId") ?: 1
+            
+            // Dummy logic to map episodeId to content (will be replaced by real DB/ViewModel later)
+            val chapterTitle = if (episodeId <= 2) "Bab 1" else "Bab 2"
+            val episodeTitle = when (episodeId) {
+                1 -> "Si Trex"
+                2 -> "Peduli"
+                3 -> "Museum"
+                else -> "Judul Episode"
+            }
+            val episodeSubtitle = "Episode ${if (episodeId <= 2) episodeId else episodeId - 2}"
+            val imageRes = when (episodeId) {
+                1 -> com.example.raion.R.drawable.bab_one_eps_one
+                2 -> com.example.raion.R.drawable.bab_one_eps_two
+                3 -> com.example.raion.R.drawable.bab_one_eps_one
+                else -> com.example.raion.R.drawable.bab_one_eps_one
+            }
+            
+            val hasNextEpisode = episodeId < 3 // dummy condition
+            val hasPrevEpisode = episodeId > 1 // dummy condition
+
+            com.example.raion.ui.features.story.StoryDetailScreen(
+                chapterTitle = chapterTitle,
+                episodeTitle = episodeTitle,
+                episodeSubtitle = episodeSubtitle,
+                imageRes = imageRes,
+                hasNextEpisode = hasNextEpisode,
+                hasPreviousEpisode = hasPrevEpisode,
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                onNextLevel = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED && hasNextEpisode) {
+                        // Navigate to next episode, replacing current one
+                        navController.navigate("story_detail/${episodeId + 1}") {
+                            popUpTo("story_detail/{episodeId}") { inclusive = true }
+                        }
+                    }
+                },
+                onPreviousLevel = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED && hasPrevEpisode) {
+                        // Navigate to prev episode, replacing current one
+                        navController.navigate("story_detail/${episodeId - 1}") {
+                            popUpTo("story_detail/{episodeId}") { inclusive = true }
+                        }
+                    }
+                },
+                onFinish = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
                 }
             )
         }

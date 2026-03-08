@@ -28,7 +28,7 @@ fun ProfileScreen(
             .verticalScroll(rememberScrollState())
     ) {
         // Space for system status bar if needed, since it's a pager page we just add some top padding
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // 1. Header (Profil + Nama)
         ProfileHeader(userName = uiState.userName)
