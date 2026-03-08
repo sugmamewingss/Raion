@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,88 +23,173 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.raion.R
 import com.example.raion.ui.theme.DesignTokens
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 
 @Composable
 fun StoryDetailScreen(
-    chapterTitle: String = "Bab 1",
-    episodeTitle: String = "Si Trex",
-    episodeSubtitle: String = "Episode 1",
-    imageRes: Int = R.drawable.bab_one_eps_one,
-    hasNextEpisode: Boolean = true,
-    hasPreviousEpisode: Boolean = false,
+    episodeId: String,
+    viewModel: StoryViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onNextLevel: () -> Unit,
-    onPreviousLevel: () -> Unit = {},
+    onNextLevel: (String) -> Unit, // pass next episode ID
+    onPreviousLevel: (String) -> Unit = {}, // pass prev episode ID
     onFinish: () -> Unit = {}
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     var commentText by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Find the current episode
+    var currentEpisode: UiEpisode? = null
+    var currentChapter: UiChapter? = null
+    var nextEpisodeId: String? = null
+    var prevEpisodeId: String? = null
+    
+    uiState.chapters.forEach { chapter ->
+        val epIndex = chapter.episodes.indexOfFirst { it.id == episodeId }
+        if (epIndex != -1) {
+            currentEpisode = chapter.episodes[epIndex]
+            currentChapter = chapter
+            
+            // Safe prev/next inside the same chapter
+            // Stop at beginning of the chapter (no cross-chapter back-navigation)
+            if (epIndex > 0) {
+                prevEpisodeId = chapter.episodes[epIndex - 1].id
+            } else {
+                prevEpisodeId = null
+            }
+            
+            if (epIndex < chapter.episodes.size - 1) {
+                nextEpisodeId = chapter.episodes[epIndex + 1].id
+            } else {
+                // To stop at the end of the chapter and show "Selesai", we simply set this to null.
+                nextEpisodeId = null
+            }
+        }
+    }
+    
+    val episode = currentEpisode
+    if (episode == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Color(0xFFA87042))
+        }
+        return
+    }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DesignTokens.Colors.CreamBackground)
     ) {
-        // Sticky Top App Bar
-        TopAppBarArea(onNavigateBack = onNavigateBack)
-
         // Scrollable Content
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(
+                top = 64.dp + WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                bottom = 32.dp
+            )
         ) {
             // Header Judul Cerita
             item {
                 StoryHeader(
-                    chapterTitle = chapterTitle,
-                    episodeTitle = episodeTitle,
-                    episodeSubtitle = episodeSubtitle
+                    chapterTitle = currentChapter?.title ?: "Bab",
+                    episodeTitle = episode.title,
+                    episodeSubtitle = "Episode ${episode.number}"
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
             // Gambar Komik Panajang (Satu Gambar Utuh)
             item {
-                Image(
-                    painter = painterResource(id = imageRes),
-                    contentDescription = "Komik Cerita $episodeTitle",
-                    contentScale = ContentScale.FillWidth, // Biar lebarnya nyoba nge-fit layer
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (episode.contentImageUrl != null) {
+                    AsyncImage(
+                        model = episode.contentImageUrl,
+                        contentDescription = "Komik Cerita ${episode.title}",
+                        contentScale = ContentScale.FillWidth, // Biar lebarnya nyoba nge-fit layer
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(400.dp).background(Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "Belum Ada Komik", fontSize = 16.sp, color = Color.DarkGray)
+                    }
+                }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Aksi Bawah & Komentar
             item {
                 BottomActionsArea(
-                    hasNextEpisode = hasNextEpisode,
-                    hasPreviousEpisode = hasPreviousEpisode,
-                    onNextLevel = onNextLevel,
-                    onPreviousLevel = onPreviousLevel,
-                    onFinish = onFinish,
+                    hasNextEpisode = nextEpisodeId != null,
+                    hasPreviousEpisode = prevEpisodeId != null,
+                    isSubmitting = isSubmitting,
+                    onNextLevel = {
+                        coroutineScope.launch {
+                            isSubmitting = true
+                            val success = viewModel.markEpisodeCompleted(episode.id)
+                            isSubmitting = false
+                            if (success) {
+                                nextEpisodeId?.let { onNextLevel(it) } 
+                            }
+                        }
+                    },
+                    onPreviousLevel = { prevEpisodeId?.let { onPreviousLevel(it) } },
+                    onFinish = {
+                        coroutineScope.launch {
+                            isSubmitting = true
+                            val success = viewModel.markEpisodeCompleted(episode.id)
+                            isSubmitting = false
+                            if (success) {
+                                onFinish()
+                            }
+                        }
+                    },
                     commentText = commentText,
                     onCommentChanged = { commentText = it }
                 )
             }
         }
+
+        // Floating Back Button Overlay
+        TopAppBarArea(
+            modifier = Modifier.align(Alignment.TopStart),
+            onNavigateBack = onNavigateBack
+        )
     }
 }
 
 @Composable
-fun TopAppBarArea(onNavigateBack: () -> Unit) {
+fun TopAppBarArea(modifier: Modifier = Modifier, onNavigateBack: () -> Unit) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.Dimensions.PaddingMedium, vertical = 16.dp),
+            .padding(
+                top = 16.dp + WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                start = DesignTokens.Dimensions.PaddingMedium,
+                end = DesignTokens.Dimensions.PaddingMedium
+            )
     ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "Kembali",
-            tint = Color(0xFFA87042),
+        // Use Surface with CircleShape or standard IconButton for proper circular ripple
+        Surface(
             modifier = Modifier
-                .size(32.dp)
-                .clickable { onNavigateBack() }
                 .align(Alignment.CenterStart)
-        )
+                .size(44.dp),
+            shape = CircleShape,
+            color = Color.White.copy(alpha = 0.5f), // Semi-transparent backing so it's visible over comics
+            onClick = onNavigateBack
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Kembali",
+                    tint = Color(0xFFA87042),
+                    modifier = Modifier.size(28.dp) // The actual drawn Arrow icon size
+                )
+            }
+        }
     }
 }
 
@@ -142,6 +228,7 @@ fun StoryHeader(
 fun BottomActionsArea(
     hasNextEpisode: Boolean,
     hasPreviousEpisode: Boolean,
+    isSubmitting: Boolean,
     onNextLevel: () -> Unit,
     onPreviousLevel: () -> Unit,
     onFinish: () -> Unit,
@@ -163,17 +250,18 @@ fun BottomActionsArea(
             if (hasPreviousEpisode) {
                 Button(
                     onClick = onPreviousLevel,
-                    modifier = Modifier.height(44.dp),
+                    modifier = Modifier.width(130.dp).height(44.dp),
                     shape = RoundedCornerShape(50),
-                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C533F))
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(20.dp).padding(end = 6.dp)
+                        modifier = Modifier.size(24.dp)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Kembali",
                         color = Color.White,
@@ -182,30 +270,39 @@ fun BottomActionsArea(
                     )
                 }
             } else {
-                Spacer(modifier = Modifier.width(44.dp)) // Penyeimbang jika tombol kiri kosong
+                Spacer(modifier = Modifier.width(130.dp)) // Penyeimbang jika tombol kiri kosong
             }
 
             // Tombol Lanjut / Selesai
             Button(
                 onClick = if (hasNextEpisode) onNextLevel else onFinish,
-                modifier = Modifier.height(44.dp),
+                modifier = Modifier.width(130.dp).height(44.dp),
                 shape = RoundedCornerShape(50),
-                contentPadding = PaddingValues(horizontal = 24.dp),
+                contentPadding = PaddingValues(0.dp),
+                enabled = !isSubmitting,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C533F))
             ) {
-                Text(
-                    text = if (hasNextEpisode) "Lanjut" else "Selesai",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    modifier = Modifier.padding(end = 6.dp)
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
+                if (isSubmitting) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = if (hasNextEpisode) "Lanjut" else "Selesai",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
 
@@ -246,13 +343,16 @@ fun BottomActionsArea(
     }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun StoryDetailScreenPreview() {
     com.example.raion.ui.theme.RaionTheme {
         StoryDetailScreen(
+            episodeId = "dummy",
             onNavigateBack = {},
             onNextLevel = {}
         )
     }
 }
+*/

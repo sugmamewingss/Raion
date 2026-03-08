@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.lifecycle.Lifecycle
@@ -242,57 +243,34 @@ fun AppNavigation() {
         // ===== STORY DETAIL: Slide Horizontal =====
         composable(
             "story_detail/{episodeId}",
-            arguments = listOf(navArgument("episodeId") { type = NavType.IntType }),
+            arguments = listOf(navArgument("episodeId") { type = NavType.StringType }),
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
         ) { backStackEntry ->
-            val episodeId = backStackEntry.arguments?.getInt("episodeId") ?: 1
+            val episodeId = backStackEntry.arguments?.getString("episodeId") ?: ""
             
-            // Dummy logic to map episodeId to content (will be replaced by real DB/ViewModel later)
-            val chapterTitle = if (episodeId <= 2) "Bab 1" else "Bab 2"
-            val episodeTitle = when (episodeId) {
-                1 -> "Si Trex"
-                2 -> "Peduli"
-                3 -> "Museum"
-                else -> "Judul Episode"
-            }
-            val episodeSubtitle = "Episode ${if (episodeId <= 2) episodeId else episodeId - 2}"
-            val imageRes = when (episodeId) {
-                1 -> com.example.raion.R.drawable.bab_one_eps_one
-                2 -> com.example.raion.R.drawable.bab_one_eps_two
-                3 -> com.example.raion.R.drawable.bab_one_eps_one
-                else -> com.example.raion.R.drawable.bab_one_eps_one
-            }
-            
-            val hasNextEpisode = episodeId < 3 // dummy condition
-            val hasPrevEpisode = episodeId > 1 // dummy condition
-
+            // Note: StoryDetailScreen will instantiate its own StoryViewModel scoped to this backstack entry
+            // Or it can be passed from AppNavigation if we scoped it higher up, but this is fine.
             com.example.raion.ui.features.story.StoryDetailScreen(
-                chapterTitle = chapterTitle,
-                episodeTitle = episodeTitle,
-                episodeSubtitle = episodeSubtitle,
-                imageRes = imageRes,
-                hasNextEpisode = hasNextEpisode,
-                hasPreviousEpisode = hasPrevEpisode,
+                episodeId = episodeId,
                 onNavigateBack = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
                     }
                 },
-                onNextLevel = {
-                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED && hasNextEpisode) {
+                onNextLevel = { nextEpId ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         // Navigate to next episode, replacing current one
-                        navController.navigate("story_detail/${episodeId + 1}") {
+                        navController.navigate("story_detail/$nextEpId") {
                             popUpTo("story_detail/{episodeId}") { inclusive = true }
                         }
                     }
                 },
-                onPreviousLevel = {
-                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED && hasPrevEpisode) {
-                        // Navigate to prev episode, replacing current one
-                        navController.navigate("story_detail/${episodeId - 1}") {
+                onPreviousLevel = { prevEpId ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("story_detail/$prevEpId") {
                             popUpTo("story_detail/{episodeId}") { inclusive = true }
                         }
                     }

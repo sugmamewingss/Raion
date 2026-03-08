@@ -49,7 +49,7 @@ fun HomeScreen(
     onNavigateOut: () -> Unit,
     onStartMission: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit,
-    onNavigateToStoryDetail: (Int) -> Unit = {}
+    onNavigateToStoryDetail: (String) -> Unit = {}
 ) {
     val isLoggedOut by viewModel.isLoggedOut.collectAsState()
     val uiState by viewModel.uiState.collectAsState()

@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -33,8 +35,11 @@ import com.example.raion.ui.theme.DesignTokens
 
 @Composable
 fun StoryScreen(
-    onNavigateToEpisode: (Int) -> Unit = {}
+    viewModel: StoryViewModel = hiltViewModel(),
+    onNavigateToEpisode: (String) -> Unit = {}
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -48,28 +53,27 @@ fun StoryScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        val ch1Episodes = listOf(
-            Episode(1, 1, "Si Trex", R.drawable.onboarding_1, false), 
-            Episode(2, 2, "Peduli", R.drawable.onboarding_2, false) // Kita ubah jadi false agar bisa diklik buat tes
-        )
-        item {
-            ChapterSection(
-                chapterTitle = "Bab 1 : Buang Sampah Sembarangan",
-                episodes = ch1Episodes,
-                onEpisodeClick = { episode -> onNavigateToEpisode(episode.globalId) }
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        val ch2Episodes = listOf(
-            Episode(3, 1, "Museum", R.drawable.onboarding_3, true)
-        )
-        item {
-            ChapterSection(
-                chapterTitle = "Bab 2 : Raja Daur ulang?",
-                episodes = ch2Episodes,
-                onEpisodeClick = { episode -> onNavigateToEpisode(episode.globalId) }
-            )
+        if (uiState.isLoading) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFA87042))
+                }
+            }
+        } else if (uiState.error != null) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text(text = "Error: ${uiState.error}", color = Color.Red)
+                }
+            }
+        } else {
+            items(uiState.chapters) { chapter ->
+                ChapterSection(
+                    chapterTitle = chapter.title,
+                    episodes = chapter.episodes,
+                    onEpisodeClick = { episode -> onNavigateToEpisode(episode.id) }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
@@ -158,8 +162,8 @@ fun HeaderBanner(modifier: Modifier = Modifier) {
 @Composable
 fun ChapterSection(
     chapterTitle: String,
-    episodes: List<Episode>,
-    onEpisodeClick: (Episode) -> Unit
+    episodes: List<UiEpisode>,
+    onEpisodeClick: (UiEpisode) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -182,7 +186,7 @@ fun ChapterSection(
 }
 
 @Composable
-fun EpisodeCard(episode: Episode, onClick: () -> Unit) {
+fun EpisodeCard(episode: UiEpisode, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .width(140.dp)
@@ -199,12 +203,21 @@ fun EpisodeCard(episode: Episode, onClick: () -> Unit) {
                     .fillMaxWidth()
                     .weight(0.7f)
             ) {
-                Image(
-                    painter = painterResource(id = episode.imageRes),
-                    contentDescription = episode.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                if (episode.coverImageUrl != null) {
+                    AsyncImage(
+                        model = episode.coverImageUrl,
+                        contentDescription = episode.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "No Image", fontSize = 10.sp)
+                    }
+                }
                 
                 if (episode.isLocked) {
                     Box(
@@ -213,17 +226,35 @@ fun EpisodeCard(episode: Episode, onClick: () -> Unit) {
                             .background(Color.Black.copy(alpha = 0.4f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF333333).copy(alpha = 0.8f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Locked",
-                                tint = Color.LightGray,
-                                modifier = Modifier.padding(8.dp)
-                            )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF333333).copy(alpha = 0.8f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "Locked",
+                                    tint = Color.LightGray,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                            // Show "Coming Soon" if there's no content link
+                            if (episode.contentImageUrl == null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = Color(0xFF1C533F).copy(alpha = 0.9f),
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = "COMING SOON",
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -255,14 +286,10 @@ fun EpisodeCard(episode: Episode, onClick: () -> Unit) {
     }
 }
 
-data class Episode(
-    val globalId: Int,
-    val number: Int,
-    val title: String,
-    val imageRes: Int,
-    val isLocked: Boolean
-)
+// Removed dummy data class Episode
 
+// Note: Removing Preview for now because it requires a ViewModel or mock instance
+/*
 @Preview(showBackground = true)
 @Composable
 fun StoryScreenPreview() {
@@ -270,3 +297,4 @@ fun StoryScreenPreview() {
         StoryScreen()
     }
 }
+*/
