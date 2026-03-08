@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
+import android.util.Log
 import javax.inject.Inject
 
 @HiltViewModel
@@ -122,21 +123,37 @@ class MissionViewModel @Inject constructor(
             )
 
             result.onSuccess { response ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        step = MissionStep.RESULT,
-                        scannedCount = response.scannedCount,
-                        isMissionComplete = response.isCompleted,
-                        lastGainedXp = response.gainedXp,
-                        lastGainedCoins = response.gainedCoins,
-                        totalGainedXp = it.totalGainedXp + response.gainedXp,
-                        totalGainedCoins = it.totalGainedCoins + response.gainedCoins,
-                        errorMessage = null
-                    )
+                Log.d("MissionVM", "logWasteEntry SUCCESS: status=${response.status}, scanned=${response.scannedCount}, target=${response.targetCount}, isCompleted=${response.isCompleted}, xp=${response.gainedXp}, coins=${response.gainedCoins}")
+
+                if (response.status == "already_completed") {
+                    // Misi hari ini sudah selesai sebelumnya
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            step = MissionStep.RESULT,
+                            scannedCount = response.scannedCount,
+                            isMissionComplete = true,
+                            errorMessage = null
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            step = MissionStep.RESULT,
+                            scannedCount = response.scannedCount,
+                            isMissionComplete = response.isCompleted,
+                            lastGainedXp = response.gainedXp,
+                            lastGainedCoins = response.gainedCoins,
+                            totalGainedXp = it.totalGainedXp + response.gainedXp,
+                            totalGainedCoins = it.totalGainedCoins + response.gainedCoins,
+                            errorMessage = null
+                        )
+                    }
                 }
             }.onFailure { e ->
-                _uiState.update {
+            Log.e("MissionVM", "logWasteEntry FAILED: ${e.message}", e)
+            _uiState.update {
                     it.copy(
                         isLoading = false,
                         step = MissionStep.RESULT,

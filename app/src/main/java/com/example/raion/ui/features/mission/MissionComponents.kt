@@ -1081,6 +1081,23 @@ fun ResultContent(
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
 
+            // Show error message if RPC failed
+            if (state.errorMessage != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFFFEBEE)
+                ) {
+                    Text(
+                        text = "⚠️ ${state.errorMessage}",
+                        fontSize = 12.sp,
+                        color = Color(0xFFB71C1C),
+                        modifier = Modifier.padding(12.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
             // Continue button

@@ -44,12 +44,12 @@ data class WasteCategory(
 
 @Serializable
 data class WasteEntryResponse(
-    val status: String,                          // "logged", "mission_complete", "already_completed"
-    @SerialName("scanned_count") val scannedCount: Int,
-    @SerialName("target_count") val targetCount: Int,
-    @SerialName("is_completed") val isCompleted: Boolean,
-    @SerialName("gained_xp") val gainedXp: Int,
-    @SerialName("gained_coins") val gainedCoins: Int
+    val status: String = "logged",                 // "logged", "mission_complete", "already_completed"
+    @SerialName("scanned_count") val scannedCount: Int = 0,
+    @SerialName("target_count") val targetCount: Int = 5,
+    @SerialName("is_completed") val isCompleted: Boolean = false,
+    @SerialName("gained_xp") val gainedXp: Int = 0,
+    @SerialName("gained_coins") val gainedCoins: Int = 0
 )
 
 // === Content ===

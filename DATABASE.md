@@ -2,7 +2,7 @@
 
 > **Platform:** Supabase (PostgreSQL)  
 > **RLS:** Disabled (semua tabel)  
-> **Last Updated:** 2026-03-07
+> **Last Updated:** 2026-03-08
 
 ---
 
@@ -214,7 +214,7 @@ Item yang bisa dibeli dengan koin.
 
 ## Functions
 
-### `log_waste_entry(p_user_id, p_waste_type, p_waste_subtype, p_location, p_quantity)`
+### `log_waste_entry(p_user_id, p_waste_type, p_waste_subtype, p_location, p_quantity, p_date)`
 
 **Dipanggil dari:** Android `HomeRepository.logWasteEntry()`
 
@@ -224,7 +224,8 @@ CREATE OR REPLACE FUNCTION public.log_waste_entry(
     p_waste_type    TEXT,
     p_waste_subtype TEXT,
     p_location      TEXT,
-    p_quantity      INT DEFAULT 1
+    p_quantity      INT DEFAULT 1,
+    p_date          DATE DEFAULT CURRENT_DATE   -- client kirim tanggal lokal
 )
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -239,21 +240,23 @@ DECLARE
 BEGIN
     -- 1. Pastikan daily mission untuk hari ini ada
     INSERT INTO public.daily_missions (user_id, date_recorded, target_count)
-    VALUES (p_user_id, CURRENT_DATE, 5)
+    VALUES (p_user_id, p_date, 5)
     ON CONFLICT (user_id, date_recorded) DO NOTHING;
 
     SELECT id, scanned_count, target_count, is_completed
     INTO v_mission_id, v_scanned, v_target, v_is_completed
     FROM public.daily_missions
-    WHERE user_id = p_user_id AND date_recorded = CURRENT_DATE;
+    WHERE user_id = p_user_id AND date_recorded = p_date;
 
     -- 2. Cek apakah misi sudah selesai
     IF v_is_completed THEN
         RETURN json_build_object(
             'status', 'already_completed',
-            'message', 'Misi hari ini sudah selesai!',
             'scanned_count', v_scanned,
-            'target_count', v_target
+            'target_count', v_target,
+            'is_completed', TRUE,
+            'gained_xp', 0,
+            'gained_coins', 0
         );
     END IF;
 
@@ -302,12 +305,12 @@ $$;
 
 ---
 
-### `update_daily_streak(p_user_id)`
+### `update_daily_streak(p_user_id, p_date)`
 
 **Streak berdasarkan misi** (bukan login). Dipanggil oleh trigger `on_mission_complete`.
 
 ```sql
-CREATE OR REPLACE FUNCTION public.update_daily_streak(p_user_id UUID)
+CREATE OR REPLACE FUNCTION public.update_daily_streak(p_user_id UUID, p_date DATE DEFAULT CURRENT_DATE)
 RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
@@ -319,19 +322,19 @@ BEGIN
 
     IF v_last_mission IS NULL THEN
         UPDATE public.profiles
-        SET current_streak = 1, last_mission_completed_date = CURRENT_DATE
+        SET current_streak = 1, last_mission_completed_date = p_date
         WHERE id = p_user_id;
 
-    ELSIF v_last_mission = CURRENT_DATE - INTERVAL '1 day' THEN
+    ELSIF v_last_mission = p_date - INTERVAL '1 day' THEN
         UPDATE public.profiles
         SET current_streak = current_streak + 1,
             highest_streak = GREATEST(highest_streak, current_streak + 1),
-            last_mission_completed_date = CURRENT_DATE
+            last_mission_completed_date = p_date
         WHERE id = p_user_id;
 
-    ELSIF v_last_mission < CURRENT_DATE - INTERVAL '1 day' THEN
+    ELSIF v_last_mission < p_date - INTERVAL '1 day' THEN
         UPDATE public.profiles
-        SET current_streak = 1, last_mission_completed_date = CURRENT_DATE
+        SET current_streak = 1, last_mission_completed_date = p_date
         WHERE id = p_user_id;
 
     -- Jika last_mission = hari ini → sudah diupdate, skip
@@ -381,10 +384,10 @@ $$;
 
 ---
 
-### `complete_task(p_user_id, p_task_id)`
+### `complete_task(p_user_id, p_task_id, p_date)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.complete_task(p_user_id UUID, p_task_id UUID)
+CREATE OR REPLACE FUNCTION public.complete_task(p_user_id UUID, p_task_id UUID, p_date DATE DEFAULT CURRENT_DATE)
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
@@ -405,7 +408,7 @@ BEGIN
     SELECT EXISTS(
         SELECT 1 FROM public.user_tasks
         WHERE profile_id = p_user_id AND master_task_id = p_task_id
-          AND completed_date = CURRENT_DATE
+          AND completed_date = p_date
     ) INTO v_already_done;
 
     IF v_already_done THEN
@@ -413,7 +416,7 @@ BEGIN
     END IF;
 
     INSERT INTO public.user_tasks (profile_id, master_task_id, status, completed_date)
-    VALUES (p_user_id, p_task_id, 'completed', CURRENT_DATE);
+    VALUES (p_user_id, p_task_id, 'completed', p_date);
 
     UPDATE public.profiles
     SET total_xp = total_xp + v_reward_xp,
@@ -495,16 +498,17 @@ BEGIN
         NEW.is_completed := TRUE;
 
         -- Bonus: +50 XP, +10 coins
+        -- NOTE: TIDAK set last_mission_completed_date di sini
+        -- karena update_daily_streak() yang handle (menghindari race condition)
         UPDATE public.profiles
         SET total_xp   = total_xp + 50,
-            coins      = coins + 10,
-            last_mission_completed_date = NEW.date_recorded
+            coins      = coins + 10
         WHERE id = NEW.user_id;
 
         PERFORM public.recalculate_level(NEW.user_id);
 
-        -- Update streak (mission-based, bukan login)
-        PERFORM public.update_daily_streak(NEW.user_id);
+        -- Update streak dengan tanggal dari client (bukan CURRENT_DATE)
+        PERFORM public.update_daily_streak(NEW.user_id, NEW.date_recorded);
     END IF;
 
     IF NEW.scanned_count > NEW.target_count THEN
@@ -590,14 +594,15 @@ Submit misi → RPC return per-entry reward
 
 ```kotlin
 // WasteEntryResponse — maps to log_waste_entry JSON result
+// Default values prevent crash when 'already_completed' branch omits fields
 @Serializable
 data class WasteEntryResponse(
-    @SerialName("status") val status: String,
-    @SerialName("scanned_count") val scannedCount: Int,
-    @SerialName("target_count") val targetCount: Int,
-    @SerialName("is_completed") val isCompleted: Boolean,
-    @SerialName("gained_xp") val gainedXp: Int,
-    @SerialName("gained_coins") val gainedCoins: Int
+    @SerialName("status") val status: String = "logged",
+    @SerialName("scanned_count") val scannedCount: Int = 0,
+    @SerialName("target_count") val targetCount: Int = 5,
+    @SerialName("is_completed") val isCompleted: Boolean = false,
+    @SerialName("gained_xp") val gainedXp: Int = 0,
+    @SerialName("gained_coins") val gainedCoins: Int = 0
 )
 
 // UserProfile — maps to profiles table

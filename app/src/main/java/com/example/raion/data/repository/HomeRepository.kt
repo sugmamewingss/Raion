@@ -64,9 +64,13 @@ class HomeRepository @Inject constructor(
     suspend fun updateDailyStreak(): Result<Unit> {
         return try {
             val userId = getCurrentUserId() ?: throw Exception("User not logged in")
+            val todayStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
             supabase.postgrest.rpc(
                 function = "update_daily_streak",
-                parameters = buildJsonObject { put("p_user_id", userId) }
+                parameters = buildJsonObject {
+                    put("p_user_id", userId)
+                    put("p_date", todayStr)
+                }
             )
             Result.success(Unit)
         } catch (e: Exception) {
@@ -152,6 +156,7 @@ class HomeRepository @Inject constructor(
     ): Result<WasteEntryResponse> {
         return try {
             val userId = getCurrentUserId() ?: throw Exception("User not authenticated")
+            val todayStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
             val response = supabase.postgrest.rpc(
                 function = "log_waste_entry",
                 parameters = buildJsonObject {
@@ -160,6 +165,7 @@ class HomeRepository @Inject constructor(
                     put("p_waste_subtype", wasteSubtype)
                     put("p_location", location)
                     put("p_quantity", quantity)
+                    put("p_date", todayStr)
                 }
             ).decodeAs<WasteEntryResponse>()
             Result.success(response)
