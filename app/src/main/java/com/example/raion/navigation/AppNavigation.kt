@@ -172,6 +172,11 @@ fun AppNavigation() {
                         }
                         navController.popBackStack()
                     }
+                },
+                onMysteryBoxClick = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("under_development")
+                    }
                 }
             )
         }

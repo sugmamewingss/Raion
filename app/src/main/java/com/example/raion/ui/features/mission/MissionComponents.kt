@@ -40,49 +40,26 @@ import com.example.raion.R
 import com.example.raion.data.model.MissionUiState
 import com.example.raion.data.model.WasteCategory
 import com.example.raion.ui.theme.DesignTokens
+import com.example.raion.ui.features.auth.components.RegisterHeader
+import com.example.raion.ui.features.auth.components.WaveBackground
 import com.example.raion.ui.util.formatCompactNumber
 
 // ============================================================
-// Shared: Back Arrow Top Bar
+// Shared: Mission Header (matches Register style)
 // ============================================================
 @Composable
-private fun MissionTopBar(onBack: () -> Unit) {
-    Box(
+private fun MissionHeader(progress: Float, onBack: () -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, start = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.Black
-            )
-        }
-    }
-}
-
-// Shared: Progress bar for wizard steps (2-5)
-@Composable
-private fun StepProgressBar(currentStep: Int, totalSteps: Int = 4) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        repeat(totalSteps) { i ->
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(6.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (i < currentStep) DesignTokens.Colors.OrangePrimary
-                        else Color(0xFFE0E0E0)
-                    )
-            )
-        }
+        Spacer(modifier = Modifier.height(32.dp))
+        RegisterHeader(
+            progress = progress,
+            showBackButton = true,
+            onBackClick = onBack
+        )
     }
 }
 
@@ -137,7 +114,8 @@ private fun SelectionCard(
 fun JourneyContent(
     state: MissionUiState,
     onStartCollecting: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onMysteryBoxClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -145,7 +123,8 @@ fun JourneyContent(
             .background(DesignTokens.Colors.CreamBackground)
             .verticalScroll(rememberScrollState())
     ) {
-        MissionTopBar(onBack = onBack)
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Profile header card
         Row(
@@ -434,86 +413,38 @@ fun JourneyContent(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Progress card
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, DesignTokens.Colors.TealPrimary),
-            color = Color.White
+        // Mission content area — varies by completion state
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Progress count
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, DesignTokens.Colors.TealPrimary),
-                    color = Color.White
-                ) {
-                    Text(
-                        text = "${state.scannedCount}/${state.targetCount}",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = Color.Black
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = if (state.isMissionComplete) "Sampah berhasil terkumpul!"
-                    else "Ayo kumpulkan sampahmu!",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = if (state.isMissionComplete) DesignTokens.Colors.TealPrimary else DesignTokens.Colors.OrangePrimary
+            if (!state.isMissionComplete) {
+                // === BELUM SELESAI: TrashSection + MysteryBox locked ===
+                MissionTrashSection(
+                    completedCount = state.scannedCount,
+                    totalTarget = state.targetCount,
+                    onNavigateNext = onStartCollecting
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                MysteryBoxSection(isReady = false)
+            } else {
+                // === SUDAH 5/5: TruckSection + MysteryBox unlocked ===
+                MissionTruckSection(
+                    completedCount = state.scannedCount,
+                    totalTarget = state.targetCount,
+                    onFinishClick = onBack
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                MysteryBoxSection(
+                    isReady = true,
+                    onClaimRewardClick = onMysteryBoxClick
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Action button
-        if (!state.isMissionComplete) {
-            Button(
-                onClick = onStartCollecting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = DesignTokens.Colors.TealPrimary
-                )
-            ) {
-                Text(
-                    text = "Mulai Kumpulkan!",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
-            }
-        } else {
-            Button(
-                onClick = onBack,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = DesignTokens.Colors.TealPrimary
-                )
-            ) {
-                Text(
-                    text = "Selesai!",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
-            }
-        }
 
         Spacer(modifier = Modifier.height(40.dp))
     }
@@ -527,63 +458,79 @@ fun IntroContent(
     onNext: () -> Unit,
     onBack: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MissionTopBar(onBack = onBack)
-        StepProgressBar(currentStep = 0)
+    Box(modifier = Modifier.fillMaxSize()) {
+        WaveBackground()
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+        MissionHeader(progress = 0.2f, onBack = onBack)
 
         Spacer(modifier = Modifier.weight(1f))
 
-        GobiImage()
+        // Dino cool (intro variant)
+        Image(
+            painter = painterResource(id = R.drawable.dino_cool),
+            contentDescription = "Dino Cool",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp),
+            contentScale = ContentScale.Fit
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Speech bubble
-        Surface(
-            modifier = Modifier.padding(horizontal = 40.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = DesignTokens.Colors.OrangePrimary
+        // Title
+        Text(
+            text = "Ayo ceritakan aksi barumu!",
+            color = Color(0xFF1B4D3E),
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 24.sp,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Sudah siap menceritakan\naksi penyelamatan bumi\nhari ini?",
+            color = Color.Black,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Neo-brutalism "Selanjutnya" button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .height(56.dp)
+                .background(Color(0xFF2C4331), RoundedCornerShape(12.dp))
+                .padding(bottom = 4.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF50B498), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onNext() },
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Ayo ceritakan aksi barumu!",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp,
+                    text = "Selanjutnya",
                     color = Color.White,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Sudah siap menceritakan aksi penyelamatan bumi hari ini?",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.9f),
-                    textAlign = TextAlign.Center
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        Button(
-            onClick = onNext,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .height(52.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.Colors.TealPrimary)
-        ) {
-            Text("Selanjutnya", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+            Spacer(modifier = Modifier.height(32.dp))
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -595,47 +542,42 @@ fun SelectTypeContent(
     onSelect: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MissionTopBar(onBack = onBack)
-        StepProgressBar(currentStep = 1)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GobiImage(modifier = Modifier.size(150.dp))
-
-        // Speech bubble question
-        Surface(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = DesignTokens.Colors.OrangePrimary
-        ) {
-            Text(
-                text = "Sampah jenis apa yang kamu buang hari ini?",
-                modifier = Modifier.padding(16.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Options
+    Box(modifier = Modifier.fillMaxSize()) {
+        WaveBackground()
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SelectionCard(label = "🍃  Sampah Organik") { onSelect("organik") }
-            SelectionCard(label = "♻️  Sampah Daur Ulang") { onSelect("daur_ulang") }
-        }
+            MissionHeader(progress = 0.4f, onBack = onBack)
 
-        Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            DinoSpeechBubble(question = "Sampah jenis apa\nyang kamu buang\nhari ini?")
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Scrollable options
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TrashItemCard(
+                    imageRes = R.drawable.sampahorganik,
+                    title = "Sampah Organik",
+                    onClick = { onSelect("organik") }
+                )
+                TrashItemCard(
+                    imageRes = R.drawable.sampahdaurulang,
+                    title = "Sampah Daur Ulang",
+                    onClick = { onSelect("daur_ulang") }
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
     }
 }
 
@@ -652,70 +594,61 @@ fun SelectSubtypeContent(
     val filteredCategories = categories.filter { it.wasteType == selectedType }
     val title = if (selectedType == "organik") "Sampah Organik" else "Sampah Daur Ulang"
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MissionTopBar(onBack = onBack)
-        StepProgressBar(currentStep = 2)
+    fun getSubtypeImage(subtype: String): Int = when (subtype) {
+        "buah" -> R.drawable.sampahbuah
+        "sayur" -> R.drawable.sampahsayur
+        "sisa_makanan" -> R.drawable.sampahorganik
+        "kaleng" -> R.drawable.sampahkaleng
+        "kertas" -> R.drawable.sampahkertas
+        "plastik" -> R.drawable.sampahplastik
+        else -> R.drawable.sampahlainnya
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GobiImage(modifier = Modifier.size(150.dp))
-
-        Surface(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = DesignTokens.Colors.OrangePrimary
-        ) {
-            Text(
-                text = "$title jenis apa?",
-                modifier = Modifier.padding(16.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
+    Box(modifier = Modifier.fillMaxSize()) {
+        WaveBackground()
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (filteredCategories.isNotEmpty()) {
-                filteredCategories.forEach { cat ->
-                    val emoji = when (cat.subtype) {
-                        "buah" -> "🍎"
-                        "sayur" -> "🥬"
-                        "sisa_makanan" -> "🍚"
-                        "kaleng" -> "🥫"
-                        "kertas" -> "📄"
-                        "plastik" -> "🧴"
-                        else -> "📦"
+            MissionHeader(progress = 0.6f, onBack = onBack)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            DinoSpeechBubble(question = "$title jenis apa?")
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Scrollable options
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (filteredCategories.isNotEmpty()) {
+                    filteredCategories.forEach { cat ->
+                        TrashItemCard(
+                            imageRes = getSubtypeImage(cat.subtype),
+                            title = "Sampah ${cat.subtype.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }}",
+                            onClick = { onSelect(cat.subtype) }
+                        )
                     }
-                    SelectionCard(label = "$emoji  Sampah ${cat.subtype.replaceFirstChar { it.uppercase() }}") {
-                        onSelect(cat.subtype)
-                    }
-                }
-            } else {
-                // Fallback if categories not loaded
-                if (selectedType == "organik") {
-                    SelectionCard(label = "🍎  Sampah Buah") { onSelect("buah") }
-                    SelectionCard(label = "🥬  Sampah Sayur") { onSelect("sayur") }
-                    SelectionCard(label = "🍚  Sisa Makanan") { onSelect("sisa_makanan") }
                 } else {
-                    SelectionCard(label = "🥫  Kaleng") { onSelect("kaleng") }
-                    SelectionCard(label = "📄  Kertas") { onSelect("kertas") }
-                    SelectionCard(label = "🧴  Plastik") { onSelect("plastik") }
+                    if (selectedType == "organik") {
+                        TrashItemCard(R.drawable.sampahbuah, "Sampah Buah") { onSelect("buah") }
+                        TrashItemCard(R.drawable.sampahsayur, "Sampah Sayur") { onSelect("sayur") }
+                        TrashItemCard(R.drawable.sampahorganik, "Sisa Makanan") { onSelect("sisa_makanan") }
+                    } else {
+                        TrashItemCard(R.drawable.sampahkaleng, "Kaleng") { onSelect("kaleng") }
+                        TrashItemCard(R.drawable.sampahkertas, "Kertas") { onSelect("kertas") }
+                        TrashItemCard(R.drawable.sampahplastik, "Plastik") { onSelect("plastik") }
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
@@ -727,75 +660,83 @@ fun SelectLocationContent(
     onSelect: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MissionTopBar(onBack = onBack)
-        StepProgressBar(currentStep = 3)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GobiImage(modifier = Modifier.size(150.dp))
-
-        Surface(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = DesignTokens.Colors.OrangePrimary
-        ) {
-            Text(
-                text = "Di tempat sampah yang terletak dimana?",
-                modifier = Modifier.padding(16.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 2x2 Grid
+    Box(modifier = Modifier.fillMaxSize()) {
+        WaveBackground()
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                LocationCard("🍽️", "Kantin", Modifier.weight(1f)) { onSelect("kantin") }
-                LocationCard("📚", "Ruang Kelas", Modifier.weight(1f)) { onSelect("ruang_kelas") }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                LocationCard("🌳", "Halaman", Modifier.weight(1f)) { onSelect("halaman") }
-                LocationCard("🚻", "Toilet", Modifier.weight(1f)) { onSelect("toilet") }
+            MissionHeader(progress = 0.8f, onBack = onBack)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            DinoSpeechBubble(question = "Kamu membuang sampah\ntersebut di tempat sampah\nyang terletak dimana?")
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Scrollable options
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    PhotoLocationCard(R.drawable.kantin, "Kantin", Modifier.weight(1f)) { onSelect("kantin") }
+                    PhotoLocationCard(R.drawable.ruangkelas, "Ruang Kelas", Modifier.weight(1f)) { onSelect("ruang_kelas") }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    PhotoLocationCard(R.drawable.halaman, "Halaman", Modifier.weight(1f)) { onSelect("halaman") }
+                    PhotoLocationCard(R.drawable.toilet, "Toilet", Modifier.weight(1f)) { onSelect("toilet") }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun LocationCard(emoji: String, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(2.dp, Color(0xFFE0E0E0)),
-        color = Color.White
+private fun PhotoLocationCard(imageRes: Int, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Column(
+        modifier = modifier
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .border(1.dp, DesignTokens.Colors.OrangePrimary, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Image(
+            painter = painterResource(id = imageRes),
+            contentDescription = label,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.2f)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .background(Color(0xFFFFF6ED), RoundedCornerShape(8.dp))
+                .border(1.dp, DesignTokens.Colors.OrangePrimary, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onClick() }
+                .padding(vertical = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(emoji, fontSize = 28.sp)
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = label,
+                color = DesignTokens.Colors.OrangePrimary,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = Color.Black,
-                textAlign = TextAlign.Center
+                fontSize = 14.sp
             )
         }
     }
@@ -813,109 +754,144 @@ fun SelectQuantityContent(
     var customQuantity by remember { mutableStateOf("") }
     var showCustomInput by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MissionTopBar(onBack = onBack)
-        StepProgressBar(currentStep = 4)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GobiImage(modifier = Modifier.size(150.dp))
-
-        Surface(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = DesignTokens.Colors.OrangePrimary
+    Box(modifier = Modifier.fillMaxSize()) {
+        WaveBackground()
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Berapa jumlah sampah yang kamu buang?",
-                modifier = Modifier.padding(16.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-        }
+            MissionHeader(progress = 1.0f, onBack = onBack)
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.padding(32.dp),
-                color = DesignTokens.Colors.TealPrimary
-            )
-        } else {
-            // Quantity options: 1-4
+            DinoSpeechBubble(question = "Berapa jumlah sampah\nyang kamu buang?")
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Scrollable options
             Column(
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    QuantityCard("1 Buah", Modifier.weight(1f)) { onSelect(1) }
-                    QuantityCard("2 Buah", Modifier.weight(1f)) { onSelect(2) }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    QuantityCard("3 Buah", Modifier.weight(1f)) { onSelect(3) }
-                    QuantityCard("4 Buah", Modifier.weight(1f)) { onSelect(4) }
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(32.dp),
+                        color = DesignTokens.Colors.TealPrimary
+                    )
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        QuantityCard("1 Buah", Modifier.weight(1f)) { onSelect(1) }
+                        QuantityCard("2 Buah", Modifier.weight(1f)) { onSelect(2) }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        QuantityCard("3 Buah", Modifier.weight(1f)) { onSelect(3) }
+                        QuantityCard("4 Buah", Modifier.weight(1f)) { onSelect(4) }
+                    }
+
+                    // Custom input
+                    if (showCustomInput) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = customQuantity,
+                                onValueChange = { customQuantity = it.filter { c -> c.isDigit() } },
+                                label = { Text("Jumlah") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Button(
+                                onClick = {
+                                    val qty = customQuantity.toIntOrNull()
+                                    if (qty != null && qty > 0) onSelect(qty)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.Colors.TealPrimary),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("OK", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else {
+                        SelectionCard(label = "✏️  Lainnya") { showCustomInput = true }
+                    }
                 }
 
-                // Custom input
-                if (showCustomInput) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = customQuantity,
-                            onValueChange = { customQuantity = it.filter { c -> c.isDigit() } },
-                            label = { Text("Jumlah") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Button(
-                            onClick = {
-                                val qty = customQuantity.toIntOrNull()
-                                if (qty != null && qty > 0) onSelect(qty)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.Colors.TealPrimary),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("OK", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                } else {
-                    SelectionCard(label = "✏️  Lainnya") { showCustomInput = true }
-                }
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun QuantityCard(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(2.dp, Color(0xFFE0E0E0)),
-        color = Color.White
+    Box(
+        modifier = modifier
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .border(1.dp, DesignTokens.Colors.OrangePrimary, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(vertical = 20.dp),
+        contentAlignment = Alignment.Center
     ) {
+        Text(
+            text = label,
+            color = DesignTokens.Colors.OrangePrimary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+        )
+    }
+}
+
+// ============================================================
+// Shared: Dino Avatar + Speech Bubble
+// ============================================================
+@Composable
+private fun DinoSpeechBubble(question: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Dino avatar box
         Box(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .size(86.dp)
+                .background(Color.White, RoundedCornerShape(12.dp))
+                .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.superdinohead),
+                contentDescription = "Dino Avatar",
+                modifier = Modifier
+                    .size(71.dp)
+                    .padding(2.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Speech bubble
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .background(Color(0xFFECA357), RoundedCornerShape(12.dp))
+                .padding(16.dp)
+        ) {
             Text(
-                text = label,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.Black
+                text = question,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
             )
         }
     }
@@ -933,30 +909,71 @@ fun ResultContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground)
-            .verticalScroll(rememberScrollState()),
+            .background(DesignTokens.Colors.CreamBackground),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        MissionTopBar(onBack = onExit)
+        MissionHeader(progress = 0f, onBack = onExit)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
 
         if (state.isMissionComplete) {
-            // === MISI SELESAI ===
-            Text(
-                text = "Misi Selesai!",
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 28.sp,
-                color = Color.Black
-            )
+            // === MISI SELESAI — Celebration ===
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Dino yeay with pow effects
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Pow left
+                Image(
+                    painter = painterResource(id = R.drawable.pow1),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .offset(x = (-80).dp, y = (-30).dp)
+                        .size(60.dp),
+                    contentScale = ContentScale.Fit
+                )
+                // Dino yeay
+                Image(
+                    painter = painterResource(id = R.drawable.dino_yeay),
+                    contentDescription = "Dino Yeay",
+                    modifier = Modifier.size(220.dp),
+                    contentScale = ContentScale.Fit
+                )
+                // Pow right
+                Image(
+                    painter = painterResource(id = R.drawable.pow2),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .offset(x = 80.dp, y = 50.dp)
+                        .size(70.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            GobiImage()
+            Text(
+                text = "Misi Selesai!",
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 26.sp,
+                color = Color(0xFF1B4D3E),
+                textAlign = TextAlign.Center
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Reward badges
+            // Reward badges with icons
             Text(
                 text = "Hadiah Imbalan:",
                 fontSize = 14.sp,
@@ -967,44 +984,54 @@ fun ResultContent(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // XP Badge
+                // XP Badge with icon
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = DesignTokens.Colors.TealPrimary
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.level),
+                            contentDescription = "XP",
+                            modifier = Modifier.size(20.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "+${state.totalGainedXp} XP",
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 16.sp,
                             color = Color.White
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("↑", fontSize = 14.sp, color = Color.White)
                     }
                 }
 
-                // Coins Badge
+                // Coins Badge with icon
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(2.dp, Color(0xFFFFDF8D)),
                     color = Color.White
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.goldimg),
+                            contentDescription = "Coins",
+                            modifier = Modifier.size(20.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "+${state.totalGainedCoins}",
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 16.sp,
                             color = Color(0xFF8C6200)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("🪙", fontSize = 14.sp)
                     }
                 }
             }
@@ -1037,48 +1064,68 @@ fun ResultContent(
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            Button(
-                onClick = onExit,
+            // Neo-brutalism "Simpan Progres" button
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.Colors.TealPrimary)
+                    .height(56.dp)
+                    .background(Color(0xFF2C4331), RoundedCornerShape(12.dp))
+                    .padding(bottom = 4.dp)
             ) {
-                Text("Simpan Progres", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF50B498), RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onExit() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Simpan Progres",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
             }
         } else {
             // === BELUM SELESAI ===
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
+            // Dino not done yet
             Image(
-                painter = painterResource(id = R.drawable.dino_tanya),
-                contentDescription = "Gobi bingung",
-                modifier = Modifier.size(200.dp),
+                painter = painterResource(id = R.drawable.dinonotdoneyet),
+                contentDescription = "Dino Belum Selesai",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp),
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Text(
                 text = "Misi Kamu Belum\nSelesai Nih!",
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 24.sp,
-                color = Color.Black,
-                textAlign = TextAlign.Center
+                fontSize = 26.sp,
+                color = Color(0xFF1B4D3E),
+                textAlign = TextAlign.Center,
+                lineHeight = 34.sp
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Ayo selesaikan misi hari ini agar\nmendapat hadiah imbalan untuk aksi kerenmu!",
+                text = "Ayo selesaikan misi hari ini agar\nmendapat hadiah imbalan untuk aksi\nkerenmu!",
+                color = Color.Black,
+                fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
-                color = Color.Gray,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp)
+                lineHeight = 21.sp
             )
 
             // Show error message if RPC failed
@@ -1098,42 +1145,58 @@ fun ResultContent(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Continue button
-            Button(
-                onClick = onContinue,
+            // Neo-brutalism "Lanjutkan!" button
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.Colors.TealPrimary)
+                    .height(56.dp)
+                    .background(Color(0xFF2C4331), RoundedCornerShape(12.dp))
+                    .padding(bottom = 4.dp)
             ) {
-                Text("Lanjutkan!", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF50B498), RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onContinue() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Lanjutkan!",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Exit button
-            OutlinedButton(
-                onClick = onExit,
+            // Outlined "Keluar" button
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, DesignTokens.Colors.TealPrimary)
+                    .height(52.dp)
+                    .border(2.dp, Color(0xFF50B498), RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onExit() },
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "Keluar",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = DesignTokens.Colors.TealPrimary
+                    text = "Keluar",
+                    color = Color(0xFF50B498),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(32.dp))
     }
+    }
 }
+

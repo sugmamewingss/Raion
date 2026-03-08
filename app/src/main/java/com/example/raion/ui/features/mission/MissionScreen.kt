@@ -21,7 +21,8 @@ import com.example.raion.data.model.MissionStep
 @Composable
 fun MissionScreen(
     viewModel: MissionViewModel = hiltViewModel(),
-    onBackWithResult: (gainedXp: Int, gainedCoins: Int, newProgress: Int, isComplete: Boolean) -> Unit
+    onBackWithResult: (gainedXp: Int, gainedCoins: Int, newProgress: Int, isComplete: Boolean) -> Unit,
+    onMysteryBoxClick: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -45,8 +46,15 @@ fun MissionScreen(
     AnimatedContent(
         targetState = state.step,
         transitionSpec = {
-            (slideInHorizontally(tween(300)) { it } + fadeIn(tween(300)))
-                .togetherWith(slideOutHorizontally(tween(300)) { -it } + fadeOut(tween(300)))
+            if (targetState.ordinal > initialState.ordinal) {
+                // Going forward: slide in from right
+                (slideInHorizontally(tween(300)) { it } + fadeIn(tween(300)))
+                    .togetherWith(slideOutHorizontally(tween(300)) { -it } + fadeOut(tween(300)))
+            } else {
+                // Going back: slide in from left
+                (slideInHorizontally(tween(300)) { -it } + fadeIn(tween(300)))
+                    .togetherWith(slideOutHorizontally(tween(300)) { it } + fadeOut(tween(300)))
+            }
         },
         label = "MissionStep"
     ) { step ->
@@ -54,7 +62,8 @@ fun MissionScreen(
             MissionStep.JOURNEY -> JourneyContent(
                 state = state,
                 onStartCollecting = { viewModel.startCollecting() },
-                onBack = onSimpleBack
+                onBack = onSimpleBack,
+                onMysteryBoxClick = onMysteryBoxClick
             )
             MissionStep.INTRO -> IntroContent(
                 onNext = { viewModel.goToSelectType() },
