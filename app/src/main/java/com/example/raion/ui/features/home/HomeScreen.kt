@@ -48,7 +48,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateOut: () -> Unit,
     onStartMission: () -> Unit = {},
-    onNavigateToEditProfile: () -> Unit
+    onNavigateToEditProfile: () -> Unit,
+    onNavigateToStoryDetail: (String) -> Unit = {}
 ) {
     val isLoggedOut by viewModel.isLoggedOut.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -84,7 +85,9 @@ fun HomeScreen(
         ) { page ->
             when (page) {
                 0 -> HomeTabContent(uiState = uiState, onStartMission = onStartMission)
-                1 -> DummyPage("Halaman Journey/Buku")
+                1 -> com.example.raion.ui.features.story.StoryScreen(
+                    onNavigateToEpisode = onNavigateToStoryDetail
+                )
                 2 -> DummyPage("Halaman Poin/Dino Kacamata")
                 3 -> ProfileScreen(
                     uiState = uiState,
@@ -141,7 +144,7 @@ fun CustomBottomNavBar(
 ) {
     val navItems = listOf(
         Pair(R.drawable.navbar1, "Beranda"),
-        Pair(R.drawable.navbar2, "Misi"),
+        Pair(R.drawable.navbar2, "Cerita"),
         Pair(R.drawable.navbar3, "Toko"),
         Pair(R.drawable.navbar4, "Profil")
     )

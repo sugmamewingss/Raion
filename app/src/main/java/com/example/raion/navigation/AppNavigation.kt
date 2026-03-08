@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.lifecycle.Lifecycle
@@ -12,6 +13,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.raion.data.repository.AuthRepository
 import com.example.raion.ui.features.auth.AuthSelectionScreen
 import com.example.raion.ui.features.auth.LoginScreen
@@ -161,6 +164,11 @@ fun AppNavigation() {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.navigate("edit_profile")
                     }
+                },
+                onNavigateToStoryDetail = { episodeId ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("story_detail/$episodeId")
+                    }
                 }
             )
         }
@@ -228,6 +236,49 @@ fun AppNavigation() {
                 },
                 onSaveSuccess = {
                     homeViewModel.refreshData()
+                }
+            )
+        }
+
+        // ===== STORY DETAIL: Slide Horizontal =====
+        composable(
+            "story_detail/{episodeId}",
+            arguments = listOf(navArgument("episodeId") { type = NavType.StringType }),
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            val episodeId = backStackEntry.arguments?.getString("episodeId") ?: ""
+            
+            // Note: StoryDetailScreen will instantiate its own StoryViewModel scoped to this backstack entry
+            // Or it can be passed from AppNavigation if we scoped it higher up, but this is fine.
+            com.example.raion.ui.features.story.StoryDetailScreen(
+                episodeId = episodeId,
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                onNextLevel = { nextEpId ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        // Navigate to next episode, replacing current one
+                        navController.navigate("story_detail/$nextEpId") {
+                            popUpTo("story_detail/{episodeId}") { inclusive = true }
+                        }
+                    }
+                },
+                onPreviousLevel = { prevEpId ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("story_detail/$prevEpId") {
+                            popUpTo("story_detail/{episodeId}") { inclusive = true }
+                        }
+                    }
+                },
+                onFinish = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
                 }
             )
         }

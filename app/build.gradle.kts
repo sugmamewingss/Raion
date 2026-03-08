@@ -82,6 +82,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.ui.text.google.fonts)
     
+    // Coil Image Loading
+    implementation(libs.coil.compose)
+    
     // DataStore Preferences
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     
