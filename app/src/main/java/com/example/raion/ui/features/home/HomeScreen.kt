@@ -49,7 +49,8 @@ fun HomeScreen(
     onNavigateOut: () -> Unit,
     onStartMission: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit,
-    onNavigateToStoryDetail: (String) -> Unit = {}
+    onNavigateToStoryDetail: (String) -> Unit = {},
+    onNavigateToQuiz: () -> Unit = {}
 ) {
     val isLoggedOut by viewModel.isLoggedOut.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -84,7 +85,7 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) { page ->
             when (page) {
-                0 -> HomeTabContent(uiState = uiState, onStartMission = onStartMission)
+                0 -> HomeTabContent(uiState = uiState, onStartMission = onStartMission, onNavigateToQuiz = onNavigateToQuiz)
                 1 -> com.example.raion.ui.features.story.StoryScreen(
                     onNavigateToEpisode = onNavigateToStoryDetail
                 )
@@ -117,7 +118,11 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeTabContent(uiState: HomeUiState, onStartMission: () -> Unit = {}) {
+fun HomeTabContent(
+    uiState: HomeUiState,
+    onStartMission: () -> Unit = {},
+    onNavigateToQuiz: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -140,7 +145,9 @@ fun HomeTabContent(uiState: HomeUiState, onStartMission: () -> Unit = {}) {
         ActiveMissionCard(mission = uiState.activeMissions.firstOrNull(), onStartMission = onStartMission)
         
         Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
-        QuickNavMenu(onItemClick = {})
+        QuickNavMenu(onItemClick = { index ->
+            if (index == 2) onNavigateToQuiz()
+        })
         
         Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
         EducationalCarousel(articles = uiState.eduArticles)

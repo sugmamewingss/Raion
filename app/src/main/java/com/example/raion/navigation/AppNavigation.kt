@@ -169,6 +169,11 @@ fun AppNavigation() {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.navigate("story_detail/$episodeId")
                     }
+                },
+                onNavigateToQuiz = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz")
+                    }
                 }
             )
         }
@@ -279,6 +284,180 @@ fun AppNavigation() {
                 onFinish = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
+                    }
+                }
+            )
+        }
+        // ===== QUIZ: Slide Horizontal =====
+        composable(
+            "quiz",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            com.example.raion.ui.features.quiz.QuizScreen(
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                onNavigateToEpisodes = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz_episode")
+                    }
+                }
+            )
+        }
+
+        // ===== QUIZ EPISODE: Slide Horizontal =====
+        composable(
+            "quiz_episode",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            com.example.raion.ui.features.quiz.QuizEpisodeScreen(
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                onNavigateToPrep = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz_prep")
+                    }
+                }
+            )
+        }
+
+        // ===== QUIZ PREP: Slide Horizontal =====
+        composable(
+            "quiz_prep",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            com.example.raion.ui.features.quiz.QuizPrepScreen(
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                onStartQuiz = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz_question")
+                    }
+                }
+            )
+        }
+
+        // ===== QUIZ QUESTION: Slide Horizontal =====
+        composable(
+            "quiz_question",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            com.example.raion.ui.features.quiz.QuizQuestionScreen(
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                onHalfwayBreak = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz_break")
+                    }
+                },
+                onQuizFinished = { correctCount ->
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz_complete/$correctCount") {
+                            popUpTo("quiz_question") { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // ===== QUIZ BREAK: Fade in/out for breather =====
+        composable(
+            "quiz_break",
+            enterTransition = { fadeIn(animationSpec = tween(400)) },
+            exitTransition = { fadeOut(animationSpec = tween(400)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(400)) },
+            popExitTransition = { fadeOut(animationSpec = tween(400)) }
+        ) { backStackEntry ->
+            com.example.raion.ui.features.quiz.QuizBreakScreen(
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                onContinue = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack() // Pop back to question screen to continue
+                    }
+                }
+            )
+        }
+
+        // ===== QUIZ COMPLETE: Slide Horizontal =====
+        composable(
+            "quiz_complete/{correctCount}",
+            arguments = listOf(navArgument("correctCount") { type = NavType.IntType }),
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            val correctCount = backStackEntry.arguments?.getInt("correctCount") ?: 0
+
+            // Optionally, we could save the XP and Coins to the backend here like we did for Mission.
+            // For now, we focus on the UI flow.
+            
+            com.example.raion.ui.features.quiz.QuizCompleteScreen(
+                correctAnswersCount = correctCount,
+                onNavigateToExplanation = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz_explanation")
+                    }
+                },
+                onRetryQuiz = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        // Pop back to the initial QuizScreen to retry
+                        navController.navigate("quiz") {
+                            popUpTo("quiz") { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // ===== QUIZ EXPLANATION: Slide Horizontal =====
+        composable(
+            "quiz_explanation",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            com.example.raion.ui.features.quiz.QuizExplanationScreen(
+                onNavigateHome = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = true } // Clear quiz stack, go fresh to home
+                        }
+                    }
+                },
+                onRetryQuiz = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz") {
+                            popUpTo("quiz") { inclusive = true } // Clear explanation stack, fresh quiz
+                        }
                     }
                 }
             )
