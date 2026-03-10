@@ -17,6 +17,9 @@ erDiagram
     waste_categories ||--o{ waste_entries : "categorizes"
     profiles ||--o{ user_tasks : "completes"
     master_tasks ||--o{ user_tasks : "tracked by"
+    profiles ||--o{ user_story_progress : "reads"
+    story_episodes ||--o{ user_story_progress : "tracked by"
+    story_chapters ||--o{ story_episodes : "contains"
 
     profiles {
         uuid id PK
@@ -92,6 +95,32 @@ erDiagram
         text name
         text image_url
         int price
+    }
+
+    story_chapters {
+        uuid id PK
+        int chapter_number
+        text title
+        bool is_active
+        timestamptz created_at
+    }
+
+    story_episodes {
+        uuid id PK
+        uuid chapter_id FK
+        int episode_number
+        text title
+        text cover_image_url
+        text content_image_url
+        bool is_premium
+    }
+
+    user_story_progress {
+        uuid id PK
+        uuid user_id FK
+        uuid episode_id FK
+        bool is_completed
+        timestamptz updated_at
     }
 ```
 
@@ -209,6 +238,40 @@ Artikel edukasi untuk carousel di HomeScreen.
 
 ### 8. `point_shop`
 Item yang bisa dibeli dengan koin.
+
+### 9. `story_chapters`
+Mengatur bab cerita (misi/komik) yang tersedia.
+
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| `id` | UUID PK | — |
+| `chapter_number` | INT | Urutan Bab |
+| `title` | TEXT | Judul Bab |
+| `is_active` | BOOL | Status aktif/tampil |
+
+### 10. `story_episodes`
+Detail tiap episode dalam sebuah bab.
+
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| `id` | UUID PK | — |
+| `chapter_id` | UUID FK | → `story_chapters.id` |
+| `episode_number` | INT | Urutan Episode |
+| `title` | TEXT | Judul Episode |
+| `cover_image_url` | TEXT | Gambar cover (thumbnail) |
+| `content_image_url` | TEXT | Gambar panjang isi komik (NULL jika coming soon) |
+| `is_premium` | BOOL | (Sistem masa depan) |
+
+### 11. `user_story_progress`
+Mencatat progress penyelesaian episode oleh user.
+
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| `id` | UUID PK | — |
+| `user_id` | UUID FK | → `profiles.id` |
+| `episode_id` | UUID FK | → `story_episodes.id` |
+| `is_completed` | BOOL | Status selesai |
+| `updated_at` | TIMESTAMPTZ | Kapan terakhir dimodifikasi |
 
 ---
 
@@ -440,6 +503,62 @@ $$;
 
 ---
 
+### `get_story_data(p_user_id)`
+
+**Dipanggil dari:** Android `StoryRepository.getStoryData()`
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_story_data(p_user_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+    result JSON;
+BEGIN
+    SELECT json_agg(
+        json_build_object(
+            'id', sc.id,
+            'chapter_number', sc.chapter_number,
+            'title', sc.title,
+            'is_active', sc.is_active,
+            'created_at', sc.created_at,
+            'episodes', COALESCE(
+                (
+                    SELECT json_agg(
+                        json_build_object(
+                            'id', se.id,
+                            'episode_number', se.episode_number,
+                            'title', se.title,
+                            'cover_image_url', se.cover_image_url,
+                            'content_image_url', se.content_image_url,
+                            'is_premium', se.is_premium,
+                            'is_completed', EXISTS (
+                                SELECT 1
+                                FROM public.user_story_progress usp
+                                WHERE usp.user_id = p_user_id
+                                  AND usp.episode_id = se.id
+                                  AND usp.is_completed = TRUE
+                            )
+                        ) ORDER BY se.episode_number
+                    )
+                    FROM public.story_episodes se
+                    WHERE se.chapter_id = sc.id
+                ),
+                '[]'::json
+            )
+        ) ORDER BY sc.chapter_number
+    )
+    INTO result
+    FROM public.story_chapters sc
+    WHERE sc.is_active = TRUE;
+
+    RETURN COALESCE(result, '[]'::json);
+END;
+$$;
+```
+
+---
+
 ## Triggers
 
 ### `on_auth_user_created`
@@ -557,6 +676,38 @@ INSERT INTO public.point_shop (name, image_url, price) VALUES
     ('Kaos Gobi',   'kaos_gobi',   20),
     ('Topi Gobi',   'topi_gobi',   30),
     ('Stiker Gobi', 'stiker_gobi', 10);
+
+-- Story Schema Creation Notes --
+/*
+CREATE TABLE public.story_chapters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chapter_number INT NOT NULL,
+    title TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (chapter_number)
+);
+
+CREATE TABLE public.story_episodes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chapter_id UUID REFERENCES public.story_chapters(id) ON DELETE CASCADE,
+    episode_number INT NOT NULL,
+    title TEXT NOT NULL,
+    cover_image_url TEXT,
+    content_image_url TEXT,
+    is_premium BOOLEAN DEFAULT FALSE,
+    UNIQUE (chapter_id, episode_number)
+);
+
+CREATE TABLE public.user_story_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    episode_id UUID REFERENCES public.story_episodes(id) ON DELETE CASCADE,
+    is_completed BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (user_id, episode_id)
+);
+*/
 ```
 
 ---
@@ -575,8 +726,10 @@ INSERT INTO public.point_shop (name, image_url, price) VALUES
 | `HomeRepository.getEducationalArticles()` | `select` from `edu_articles` | Tabel |
 | `HomeRepository.getPointShopItems()` | `select` from `point_shop` | Tabel |
 | `AuthRepository.checkUsernameAvailability()` | `rpc("check_username_available")` | RPC |
+| `StoryRepository.getStoryData()` | `rpc("get_story_data")` | RPC |
+| `StoryRepository.markEpisodeCompleted()` | `upsert` to `user_story_progress` | Tabel |
 
-### Optimistic UI Pattern
+### Optimistic UI & Reactive State Pattern
 
 Data update di HomeScreen menggunakan **optimistic update + background sync**:
 
@@ -622,8 +775,8 @@ data class UserProfile(
 
 | Kategori | Jumlah | Detail |
 |----------|--------|--------|
-| **Tabel** | 8 | `profiles`, `daily_missions`, `waste_entries`, `waste_categories`, `master_tasks`, `user_tasks`, `edu_articles`, `point_shop` |
-| **Functions** | 6 | `check_username_available`, `recalculate_level`, `complete_task`, `update_daily_streak`, `log_waste_entry`, `handle_new_user` |
+| **Tabel** | 11 | `profiles`, `daily_missions`, `waste_entries`, `waste_categories`, `master_tasks`, `user_tasks`, `edu_articles`, `point_shop`, `story_chapters`, `story_episodes`, `user_story_progress` |
+| **Functions** | 7 | `check_username_available`, `recalculate_level`, `complete_task`, `update_daily_streak`, `log_waste_entry`, `handle_new_user`, `get_story_data` |
 | **Triggers** | 2 | `on_auth_user_created`, `on_mission_complete` |
 | **Indexes** | 6 | Leaderboard, username, daily queries, waste history |
 | **Constraints** | 20+ | UNIQUE, CHECK, FK CASCADE |

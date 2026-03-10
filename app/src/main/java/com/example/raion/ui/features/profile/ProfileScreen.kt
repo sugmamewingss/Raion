@@ -18,7 +18,9 @@ import com.example.raion.ui.theme.DesignTokens
 fun ProfileScreen(
     uiState: HomeUiState,
     onLogoutClick: () -> Unit,
-    onEditProfileClick: () -> Unit
+    onEditProfileClick: () -> Unit,
+    onStartDailyMission: () -> Unit,
+    onWardrobeClick: () -> Unit
 ) {
     // Scaffold or Main Container for Profile Tab
     Column(
@@ -34,7 +36,11 @@ fun ProfileScreen(
         ProfileHeader(userName = uiState.userName)
 
         // 2. Avatar Hero Section
-        ProfileAvatarSection(coinBalance = uiState.totalCoins)
+        ProfileAvatarSection(
+            coinBalance = uiState.totalCoins,
+            avatarUrl = uiState.currentAvatarUrl,
+            onWardrobeClick = onWardrobeClick
+        )
 
         // Wrapper for content below Avatar to give them side padding
         Column(
@@ -63,7 +69,8 @@ fun ProfileScreen(
             // 5. Streak & Tasks Retention Card
             StreakRetentionCard(
                 streak = uiState.streak,
-                onTaskClick = { /* TODO: Action when clicking Kerjakan Tugas */ }
+                isMissionCompletedToday = uiState.isMissionCompletedToday,
+                onTaskClick = onStartDailyMission
             )
 
             Spacer(modifier = Modifier.height(32.dp))

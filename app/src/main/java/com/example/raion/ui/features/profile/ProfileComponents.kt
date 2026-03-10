@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
+import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,7 +56,7 @@ fun ProfileHeader(userName: String) {
 
 // --- 2. Avatar Section ---
 @Composable
-fun ProfileAvatarSection(coinBalance: Int) {
+fun ProfileAvatarSection(coinBalance: Int, avatarUrl: String, onWardrobeClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -70,7 +71,7 @@ fun ProfileAvatarSection(coinBalance: Int) {
                 .size(40.dp)
                 .background(Color.Transparent, RoundedCornerShape(8.dp))
                 .border(1.dp, Color(0xFF88C9B9), RoundedCornerShape(8.dp))
-                .clickable { /* TBD: Open Wardrobe */ },
+                .clickable(onClick = onWardrobeClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -105,14 +106,33 @@ fun ProfileAvatarSection(coinBalance: Int) {
         }
 
         // Mascot Output (Center Bottom)
-        Image(
-            painter = painterResource(id = R.drawable.dinoprofile), // Re-using dino image
+        val imageToLoad = if (avatarUrl.isNotEmpty()) avatarUrl else "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+        
+        SubcomposeAsyncImage(
+            model = imageToLoad,
             contentDescription = "Hero Avatar",
             modifier = Modifier
                 .size(200.dp)
                 .align(Alignment.BottomCenter)
                 .offset(y = 10.dp), // Slightly drop it down
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.Fit,
+            loading = {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(40.dp),
+                        color = DesignTokens.Colors.OrangePrimary,
+                        strokeWidth = 3.dp
+                    )
+                }
+            },
+            error = {
+                Image(
+                    painter = painterResource(id = R.drawable.dinoprofile),
+                    contentDescription = "Hero Avatar Fallback",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            }
         )
         
         // Bottom stroke border divider as a separator
@@ -279,7 +299,11 @@ fun EditProfileButton(onClick: () -> Unit) {
 
 // --- 5. Streak Retention Section ---
 @Composable
-fun StreakRetentionCard(streak: Int, onTaskClick: () -> Unit) {
+fun StreakRetentionCard(
+    streak: Int, 
+    isMissionCompletedToday: Boolean,
+    onTaskClick: () -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -297,28 +321,31 @@ fun StreakRetentionCard(streak: Int, onTaskClick: () -> Unit) {
                 // Left Column
                 Column {
                     Text(
-                        text = "Kerja bagus!",
-                        fontSize = 20.sp,
+                        text = if (isMissionCompletedToday) "Kerja bagus!" else "Ayo nyalakan\napi harimu!",
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = DesignTokens.Colors.OrangePrimary
+                        color = DesignTokens.Colors.OrangePrimary,
+                        lineHeight = 22.sp
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = onTaskClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = DesignTokens.Colors.OrangePrimary,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(50),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                        modifier = Modifier
-                            .height(34.dp)
-                    ) {
-                         Text(
-                             text = "Kerjakan Tugas",
-                             fontSize = 11.sp,
-                             fontWeight = FontWeight.Bold
-                         )
+                    
+                    if (!isMissionCompletedToday) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = onTaskClick,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DesignTokens.Colors.OrangePrimary,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(50),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text(
+                                text = "Kerjakan Tugas",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
@@ -359,18 +386,15 @@ fun StreakRetentionCard(streak: Int, onTaskClick: () -> Unit) {
                 val currentDayIndex = if (currentDayOfWeek == java.util.Calendar.SUNDAY) 6 else currentDayOfWeek - 2
                 
                 // We show this week.
-                // Lit days are `streak` consecutive days ending on today (currentDayIndex) 
-                // OR ending on yesterday if the user hasn't opened app/done mission today yet
-                // For simplicity assuming the streak is active up to today.
-                // If streak = 3, and today is Wednesday (index 2), then Mon, Tue, Wed are lit (indices 0, 1, 2).
+                // Lit days are `streak` consecutive days ending on today IF completed,
+                // OR ending on yesterday if the user hasn't done mission today yet.
+                val effectiveEndDayIndex = if (isMissionCompletedToday) currentDayIndex else currentDayIndex - 1
                 
                 days.forEachIndexed { index, dayName ->
-                    // A day is lit if its index is within the last `streak` days ending at `currentDayIndex`
-                    // We only light up days in the current week (index <= currentDayIndex)
-                    // If streak spans to previous week, we still light up from Monday (index 0) up to currentDayIndex
-                    val isPastOrToday = index <= currentDayIndex
-                    val daysAgo = currentDayIndex - index
-                    val isLit = isPastOrToday && daysAgo < streak
+                    // A day is lit if its index is within the last `streak` days ending at `effectiveEndDayIndex`
+                    val isPastOrEffectiveToday = index <= effectiveEndDayIndex
+                    val daysAgo = effectiveEndDayIndex - index
+                    val isLit = isPastOrEffectiveToday && daysAgo >= 0 && daysAgo < streak
                     
                     val dayColor = if (isLit) DesignTokens.Colors.OrangePrimary else Color(0xFFC4C4C4)
                     

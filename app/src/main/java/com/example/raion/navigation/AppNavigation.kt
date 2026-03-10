@@ -231,6 +231,7 @@ fun AppNavigation() {
                 initialNickname = uiState.username,
                 initialFullName = uiState.fullName,
                 initialBirthDate = uiState.birthDate,
+                initialAvatarUrl = uiState.currentAvatarUrl,
                 onBackClick = {
                     navController.popBackStack()
                 },

@@ -16,10 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
+import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +38,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontStyle
 import com.example.raion.R
 import com.example.raion.data.model.ActiveMission
@@ -56,6 +58,7 @@ fun TopProfileSection(
     progressRatio: Float,
     coins: Int,
     level: Int,
+    avatarUrl: String = "",
     isMissionCompletedToday: Boolean = false
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
@@ -68,15 +71,37 @@ fun TopProfileSection(
             // Kontainer Kiri: Avatar + Info (Teks & Streak)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Avatar
-                Image(
-                    painter = painterResource(id = R.drawable.dinoprofile),
-                    contentDescription = "Avatar",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, Color.LightGray, CircleShape),
-                    contentScale = ContentScale.Crop
-                )
+                Box(
+                    modifier = Modifier.size(65.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val imageToLoad = if (avatarUrl.isNotEmpty()) avatarUrl else "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+                    
+                    SubcomposeAsyncImage(
+                        model = imageToLoad,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .border(1.dp, Color.LightGray, CircleShape),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = DesignTokens.Colors.OrangePrimary,
+                                strokeWidth = 2.dp
+                            )
+                        },
+                        error = {
+                            Image(
+                                painter = painterResource(id = R.drawable.dinoprofile),
+                                contentDescription = "Avatar default",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    )
+                }
                 Spacer(modifier = Modifier.width(12.dp))
 
                 // Info
@@ -707,12 +732,6 @@ fun RankItemCard(user: UserProfile, rank: Int) {
         else -> "Pejuang Bumi"
     }
 
-    val avatarRes = when (rank) {
-        1 -> R.drawable.dinoprofile
-        2 -> R.drawable.dinoprofile2
-        else -> R.drawable.dinoprofile3
-    }
-
     val rankStr = when (rank) {
         1 -> "1st"
         2 -> "2nd"
@@ -764,14 +783,34 @@ fun RankItemCard(user: UserProfile, rank: Int) {
                         .fillMaxSize()
                         .background(Color(0xFFE8E8E8), CircleShape)
                 )
-                Image(
-                    painter = painterResource(id = avatarRes),
+                val fallbackUrl = "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+                val imageToLoad = if (!user.currentAvatarUrl.isNullOrEmpty()) user.currentAvatarUrl else fallbackUrl
+                
+                SubcomposeAsyncImage(
+                    model = imageToLoad,
                     contentDescription = "Rank $rank Avatar",
                     modifier = Modifier
                         .size(avatarSize - 6.dp)
                         .align(Alignment.Center)
                         .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = DesignTokens.Colors.OrangePrimary,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    },
+                    error = {
+                        Image(
+                            painter = painterResource(id = R.drawable.dinoprofile),
+                            contentDescription = "Rank $rank Avatar Default",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 )
                 // Level badge — bottom-right, shield shape
                 Box(

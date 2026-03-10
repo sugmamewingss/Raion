@@ -8,7 +8,9 @@ import com.example.raion.data.model.EduArticle
 import com.example.raion.data.model.LeaderboardUser
 import com.example.raion.data.model.MasterTask
 import com.example.raion.data.model.PointShopItem
+import com.example.raion.data.model.ShopCategory
 import com.example.raion.data.model.UserProfile
+import com.example.raion.data.model.UserInventoryItem
 import com.example.raion.data.model.UserTask
 import com.example.raion.data.model.WasteCategory
 import com.example.raion.data.model.WasteEntryResponse
@@ -244,6 +246,61 @@ class HomeRepository @Inject constructor(
                 .select()
                 .decodeList<PointShopItem>()
             Result.success(items)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getShopCategories(): Result<List<ShopCategory>> {
+        return try {
+            val categories = supabase.postgrest["shop_categories"]
+                .select { order("sort_order", Order.ASCENDING) }
+                .decodeList<ShopCategory>()
+            Result.success(categories)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getUserInventory(): Result<List<UserInventoryItem>> {
+        return try {
+            val userId = getCurrentUserId() ?: throw Exception("User not logged in")
+            val inventory = supabase.postgrest["user_inventory"]
+                .select { filter { eq("user_id", userId) } }
+                .decodeList<UserInventoryItem>()
+            Result.success(inventory)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun buyShopItem(itemId: String): Result<Unit> {
+        return try {
+            val userId = getCurrentUserId() ?: throw Exception("User not logged in")
+            supabase.postgrest.rpc(
+                function = "buy_shop_item",
+                parameters = buildJsonObject {
+                    put("p_user_id", userId)
+                    put("p_item_id", itemId)
+                }
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun equipShopItem(itemId: String): Result<Unit> {
+        return try {
+            val userId = getCurrentUserId() ?: throw Exception("User not logged in")
+            supabase.postgrest.rpc(
+                function = "equip_shop_item",
+                parameters = buildJsonObject {
+                    put("p_user_id", userId)
+                    put("p_item_id", itemId)
+                }
+            )
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

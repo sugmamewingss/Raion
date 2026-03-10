@@ -26,5 +26,9 @@ data class UserProfile(
     @SerialName("last_active_date")
     val lastActiveDate: String? = null,
     @SerialName("last_mission_completed_date")
-    val lastMissionCompletedDate: String? = null
+    val lastMissionCompletedDate: String? = null,
+    @SerialName("current_avatar_url")
+    val currentAvatarUrl: String? = null,
+    @SerialName("equipped_item_id")
+    val equippedItemId: String? = null
 )
