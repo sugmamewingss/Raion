@@ -50,7 +50,9 @@ fun HomeScreen(
     onStartMission: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit,
     onNavigateToStoryDetail: (String) -> Unit = {},
-    onNavigateToQuiz: () -> Unit = {}
+    onNavigateToQuiz: () -> Unit = {},
+    onNavigateToDiary: () -> Unit = {},
+    onNavigateToMissionDetail: () -> Unit = {}
 ) {
     val isLoggedOut by viewModel.isLoggedOut.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -85,7 +87,13 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) { page ->
             when (page) {
-                0 -> HomeTabContent(uiState = uiState, onStartMission = onStartMission, onNavigateToQuiz = onNavigateToQuiz)
+                0 -> HomeTabContent(
+                    uiState = uiState, 
+                    onStartMission = onStartMission, 
+                    onNavigateToQuiz = onNavigateToQuiz,
+                    onNavigateToDiary = onNavigateToDiary,
+                    onNavigateToMissionDetail = onNavigateToMissionDetail
+                )
                 1 -> com.example.raion.ui.features.story.StoryScreen(
                     onNavigateToEpisode = onNavigateToStoryDetail
                 )
@@ -121,7 +129,9 @@ fun HomeScreen(
 fun HomeTabContent(
     uiState: HomeUiState,
     onStartMission: () -> Unit = {},
-    onNavigateToQuiz: () -> Unit = {}
+    onNavigateToQuiz: () -> Unit = {},
+    onNavigateToDiary: () -> Unit = {},
+    onNavigateToMissionDetail: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -146,6 +156,8 @@ fun HomeTabContent(
         
         Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
         QuickNavMenu(onItemClick = { index ->
+            if (index == 0) onNavigateToMissionDetail()
+            if (index == 1) onNavigateToDiary()
             if (index == 2) onNavigateToQuiz()
         })
         

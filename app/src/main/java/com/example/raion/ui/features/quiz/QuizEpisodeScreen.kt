@@ -244,7 +244,6 @@ fun EpisodeCard(
         color = bgColor,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !isLocked, onClick = onClick)
     ) {
         Row(
             modifier = Modifier
@@ -295,6 +294,7 @@ fun EpisodeCard(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
+                    .clickable(enabled = !isLocked, onClick = onClick)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     if (isLocked) {

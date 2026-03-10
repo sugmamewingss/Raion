@@ -36,6 +36,7 @@ data class HomeUiState(
     val streak: Int = 0,
     val isActive: Boolean = true,
     val isMissionCompletedToday: Boolean = false,
+    val missionsCompleted: Int = 0,
 
     // Core Game Data
     val activeMissions: List<ActiveMission> = emptyList(),
@@ -150,6 +151,7 @@ class HomeViewModel @Inject constructor(
             val shopDeferred = async { homeRepository.getPointShopItems() }
             val categoriesDeferred = async { homeRepository.getShopCategories() }
             val inventoryDeferred = async { homeRepository.getUserInventory() }
+            val completedMissionsDeferred = async { homeRepository.getCompletedMissionsCount() }
 
             val profileResult = profileDeferred.await()
             val missionsResult = missionsDeferred.await()
@@ -158,6 +160,7 @@ class HomeViewModel @Inject constructor(
             val shopResult = shopDeferred.await()
             val categoriesResult = categoriesDeferred.await()
             val inventoryResult = inventoryDeferred.await()
+            val completedMissionsResult = completedMissionsDeferred.await()
 
             if (profileResult.isSuccess) {
                 val profile = profileResult.getOrThrow()
@@ -195,6 +198,7 @@ class HomeViewModel @Inject constructor(
                         streak = profile.currentStreak,
                         isActive = true,
                         isMissionCompletedToday = completedTodayMissions,
+                        missionsCompleted = completedMissionsResult.getOrNull() ?: 0,
 
                         activeMissions = missionsResult.getOrNull() ?: emptyList(),
                         eduArticles = articlesResult.getOrNull() ?: emptyList(),

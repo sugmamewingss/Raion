@@ -133,6 +133,22 @@ class HomeRepository @Inject constructor(
         }
     }
 
+    suspend fun getCompletedMissionsCount(): Result<Int> {
+        return try {
+            val userId = getCurrentUserId() ?: throw Exception("User not authenticated")
+            val missions = supabase.postgrest["daily_missions"]
+                .select(Columns.ALL) {
+                    filter { 
+                        eq("user_id", userId) 
+                        eq("is_completed", true)
+                    }
+                }.decodeList<DailyMissionTracker>()
+            Result.success(missions.size)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // =========================================================================
     // Waste Entry (Mission Wizard)
     // =========================================================================

@@ -98,9 +98,9 @@ fun MascotBubbleCard() {
                 painter = painterResource(id = R.drawable.dinothinking),
                 contentDescription = "Mascot Thinking",
                 modifier = Modifier
-                    .width(140.dp)
-                    .height(160.dp)
-                    .offset(y = 10.dp), // Push down slightly to align bottom with card edge if desired
+                    .width(190.dp)
+                    .height(210.dp)
+                    .offset(x = 9.dp, y = 12.dp), // Shift right by 9dp, up 12dp
                 contentScale = ContentScale.Fit
             )
             
@@ -147,7 +147,7 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
                     // Bab Info
                     InfoBox(
@@ -165,7 +165,7 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // Episode Info
                     InfoBox(
@@ -181,7 +181,7 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // Question Count Info
                     Surface(
@@ -192,14 +192,14 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(10.dp)
                         ) {
                             // Conceptual clock icon placeholder, we can use an outline circle with text or image
                             Surface(
                                 shape = CircleShape,
                                 border = BorderStroke(1.5.dp, Color(0xFF5F7D93)), // Slate grey border for clock
                                 color = Color.Transparent,
-                                modifier = Modifier.size(40.dp)
+                                modifier = Modifier.size(32.dp)
                             ) {
                                 // Simple line mimicking a clock hand
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -242,14 +242,14 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Start Button
                     Button(
                         onClick = onStartQuiz,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
+                            .height(52.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF549E83) // Soft Green Button Color
@@ -284,12 +284,12 @@ fun InfoBox(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = "$title Icon",
-                modifier = Modifier.size(46.dp),
+                modifier = Modifier.size(34.dp),
                 contentScale = ContentScale.Fit
             )
 
@@ -298,7 +298,7 @@ fun InfoBox(
             Column {
                 Text(
                     text = title,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black
                 )
@@ -309,7 +309,7 @@ fun InfoBox(
                     fontWeight = FontWeight.Medium,
                     color = Color.DarkGray
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 badges()
             }
         }

@@ -174,6 +174,16 @@ fun AppNavigation() {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.navigate("quiz")
                     }
+                },
+                onNavigateToDiary = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("diary")
+                    }
+                },
+                onNavigateToMissionDetail = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("mission_detail")
+                    }
                 }
             )
         }
@@ -201,6 +211,40 @@ fun AppNavigation() {
             )
         }
 
+        // ===== MISSION DETAIL: Slide Horizontal =====
+        composable(
+            "mission_detail",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            val homeEntry = remember(backStackEntry) {
+                navController.getBackStackEntry("home")
+            }
+            val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel(homeEntry)
+            val uiState by homeViewModel.uiState.collectAsState()
+
+            com.example.raion.ui.features.mission.MissionDetailScreen(
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
+                    }
+                },
+                userName = uiState.fullName,
+                userLevel = uiState.userLevel,
+                missionsCompleted = uiState.missionsCompleted,
+                totalXp = uiState.totalXp,
+                totalCoins = uiState.totalCoins,
+                onStartMission = {
+                    navController.navigate("mission")
+                },
+                onNavigateToMissionRincian = {
+                    navController.navigate("mission_rincian")
+                }
+            )
+        }
+
         // ===== UNDER DEVELOPMENT: Slide Horizontal (from Alfi) =====
         composable(
             "under_development",
@@ -214,6 +258,53 @@ fun AppNavigation() {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
                     }
+                }
+            )
+        }
+
+        // --- Mission Rincian Screen ---
+        composable(
+            route = "mission_rincian",
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth },
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth },
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            }
+        ) { backStackEntry ->
+            // Retrieve data from HomeViewModel to display accurate XP and Coins
+            val homeEntry = remember(backStackEntry) {
+                navController.getBackStackEntry("home")
+            }
+            val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel(homeEntry)
+            val uiState by homeViewModel.uiState.collectAsState()
+
+            com.example.raion.ui.features.mission.MissionRincianScreen(
+                totalXp = uiState.totalXp,
+                totalCoins = uiState.totalCoins,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onStartMission = {
+                    navController.navigate("mission")
                 }
             )
         }
@@ -458,6 +549,36 @@ fun AppNavigation() {
                         navController.navigate("quiz") {
                             popUpTo("quiz") { inclusive = true } // Clear explanation stack, fresh quiz
                         }
+                    }
+                }
+            )
+        }
+
+        // ===== DIARY / BUKU HARIAN: Slide Horizontal =====
+        composable(
+            "diary",
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
+        ) { backStackEntry ->
+            val homeEntry = remember(backStackEntry) {
+                navController.getBackStackEntry("home")
+            }
+            val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel(homeEntry)
+            val uiState by homeViewModel.uiState.collectAsState()
+
+            com.example.raion.ui.features.diary.DiaryScreen(
+                streak = uiState.streak,
+                isMissionCompletedToday = uiState.isMissionCompletedToday,
+                userName = uiState.fullName,
+                userLevel = uiState.userLevel,
+                missionsCompleted = uiState.missionsCompleted,
+                totalXp = uiState.totalXp,
+                totalCoins = uiState.totalCoins,
+                onNavigateBack = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.popBackStack()
                     }
                 }
             )

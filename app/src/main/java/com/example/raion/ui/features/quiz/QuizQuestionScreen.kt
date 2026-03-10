@@ -198,13 +198,11 @@ fun QuizQuestionScreen(
                     currentQuestionIndex++ // Move index to 5 so when returning we load question 6
                     selectedAnswerIndex = null
                     showPopup = false
-                    isAnswerCorrect = false
                     onHalfwayBreak()
                 } else {
                     currentQuestionIndex++
                     selectedAnswerIndex = null
                     showPopup = false
-                    isAnswerCorrect = false
                 }
             } else if (currentQuestionIndex == questions.size - 1) {
                 // We reached the end of currently available hardcoded questions.
@@ -214,7 +212,6 @@ fun QuizQuestionScreen(
                     currentQuestionIndex++ // Push to 5
                     selectedAnswerIndex = null
                     showPopup = false
-                    isAnswerCorrect = false
                     onHalfwayBreak()
                 } else {
                     onQuizFinished(correctAnswersCount)
