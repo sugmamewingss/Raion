@@ -19,6 +19,9 @@ import com.example.raion.data.model.UserTask
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 
+/**
+ * AuthRepository — menangani autentikasi + game data functions.
+ */
 @Singleton
 class AuthRepository @Inject constructor(
     private val supabase: SupabaseClient
@@ -55,7 +58,7 @@ class AuthRepository @Inject constructor(
                 birthDate
             }
 
-            val userSession = supabase.auth.signUpWith(Email) {
+            supabase.auth.signUpWith(Email) {
                 email = dummyEmail
                 this.password = password
 
@@ -100,12 +103,13 @@ class AuthRepository @Inject constructor(
         return try {
             val session = supabase.auth.currentSessionOrNull()
             val user = session?.user
-            val fullName = user?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: "Sobat Raion"
+            val fullName = user?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: "Sobat Gobi"
             
-            // Mengambil kata pertama (nama panggilan)
-            fullName.split(" ").firstOrNull()?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: "Sobat Raion"
+            fullName.split(" ").firstOrNull()?.replaceFirstChar { 
+                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() 
+            } ?: "Sobat Gobi"
         } catch (e: Exception) {
-            "Sobat Raion"
+            "Sobat Gobi"
         }
     }
 
@@ -121,6 +125,47 @@ class AuthRepository @Inject constructor(
 
             Result.success(profile)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateUserProfile(name: String, birthDate: String): Result<Unit> {
+        return try {
+            val session = supabase.auth.currentSessionOrNull()
+            val userId = session?.user?.id ?: throw Exception("User not logged in")
+
+            val inputFormat = SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("id-ID"))
+            val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            
+            val parsedDate = try {
+                val d = inputFormat.parse(birthDate)
+                if (d != null) outputFormat.format(d) else birthDate
+            } catch (e: Exception) {
+                birthDate
+            }
+
+            // 1. Update Auth user (metadata only, we cannot change dummy email without verification)
+            supabase.auth.updateUser {
+                data = buildJsonObject {
+                    put("full_name", name)
+                    put("birth_date", parsedDate)
+                }
+            }
+
+            // 2. Update profiles table
+            supabase.postgrest["profiles"]
+                .update({
+                    set("name", name)
+                    set("birth_date", parsedDate)
+                }) {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "updateUserProfile error", e)
             Result.failure(e)
         }
     }

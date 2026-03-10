@@ -2,9 +2,15 @@ package com.example.raion.ui.features.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.raion.data.model.ActiveMission
+import com.example.raion.data.model.EduArticle
+import com.example.raion.data.model.PointShopItem
+import com.example.raion.data.model.UserProfile
 import com.example.raion.data.repository.AuthRepository
+import com.example.raion.data.repository.HomeRepository
 import com.example.raion.data.local.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,149 +18,188 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
-import android.util.Log
-
-data class LeaderboardEntry(
-    val name: String,
-    val points: String,
-    val title: String,
-    val rank: String,
-    val isPrimary: Boolean = false,
-    val isSecondary: Boolean = false
-)
-
-data class ShopItemData(
-    val price: String
-)
 
 data class HomeUiState(
-    val userName: String = "",
-    val userLevel: Int = 0,
-    val currentPoints: Int = 0,
-    val totalXp: Int = 0, // Lifetime XP aktual di database
-    val xpForCurrentLevel: Int = 0, // Syarat batas bawah level saat ini
-    val xpForNextLevel: Int = 100, // Syarat batas atas (Next Level)
+    val isLoading: Boolean = true,
+    val userName: String = "Sobat", // Used for "Halo, {First Name}!"
+    val username: String = "sobatgobi", // Used for "Nama Panggilan" in Edit Profile
+    val fullName: String = "Sobat Gobi",
+    val birthDate: String = "1 Januari 2010",
+    val avatarId: Int = 1,
+    val userLevel: Int = 1,
+    val totalCoins: Int = 0,
+    val totalXp: Int = 0,
+    val xpForCurrentLevel: Int = 0,
+    val xpForNextLevel: Int = 100,
     val streak: Int = 0,
-    val incompleteTasks: List<String> = emptyList(),
-    val organicCount: Int = 0,
-    val inorganicCount: Int = 0,
-    val leaderboard: List<LeaderboardEntry> = emptyList(),
-    val shopItems: List<ShopItemData> = listOf(
-        ShopItemData("20 Poin"),
-        ShopItemData("10 Poin"),
-        ShopItemData("30 Poin"),
-        ShopItemData("40 Poin")
-    )
+    val isActive: Boolean = true,
+    val isMissionCompletedToday: Boolean = false,
+
+    // Core Game Data
+    val activeMissions: List<ActiveMission> = emptyList(),
+    val eduArticles: List<EduArticle> = emptyList(),
+    val leaderboard: List<UserProfile> = emptyList(),
+    val pointShopItems: List<PointShopItem> = emptyList(),
+    
+    val errorMessage: String? = null
 ) {
-    // BEST PRACTICE: Progress Ratio dihitung secara relatif
     val levelProgressRatio: Float
         get() = if (xpForNextLevel > xpForCurrentLevel) {
-            (totalXp - xpForCurrentLevel).toFloat() / (xpForNextLevel - xpForCurrentLevel)
+            val progress = (totalXp - xpForCurrentLevel).toFloat() / (xpForNextLevel - xpForCurrentLevel)
+            progress.coerceIn(0f, 1f)
         } else 0f
 
-    // BEST PRACTICE: Teks progress menampilkan sisa relatif ke level berikutnya
     val levelProgressText: String
-        get() = "${totalXp - xpForCurrentLevel} / ${xpForNextLevel - xpForCurrentLevel} XP"
+        get() = "${(totalXp - xpForCurrentLevel).coerceAtLeast(0)}/${xpForNextLevel - xpForCurrentLevel} XP"
 }
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val homeRepository: HomeRepository,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     private val _isLoggedOut = MutableStateFlow(false)
     val isLoggedOut: StateFlow<Boolean> = _isLoggedOut.asStateFlow()
     
-    // UI State for HomeScreen content
-    private val _uiState = MutableStateFlow(HomeUiState(userName = "Memuat..."))
+    private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        fetchUserData()
+        loadHomeData()
     }
 
-    private fun fetchUserData() {
-        viewModelScope.launch {
-            // Panggil trigger Streak harian setiap kali Home dibuka
-            authRepository.updateDailyStreak()
+    /** Optimistic UI: apply mission results locally, then background sync */
+    fun applyMissionResult(gainedXp: Int, gainedCoins: Int, newProgress: Int, isComplete: Boolean) {
+        _uiState.update { state ->
+            // Per-entry rewards from RPC
+            var bonusXp = gainedXp
+            var bonusCoins = gainedCoins
 
-            val profileResult = authRepository.getUserProfile()
-            val leaderboardResult = authRepository.getTopPlayerProfiles(3)
-            val tasksResult = authRepository.getIncompleteDailyTasks()
-            val wasteCountsResult = authRepository.getOrganicInorganicCounts()
-            
-            val fetchedPlayers = leaderboardResult.getOrNull()?.map { user ->
-                val name = user.name.split(" ").firstOrNull()?.replaceFirstChar { 
-                    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() 
-                } ?: user.username
-                
-                val title = "Level ${user.level} Player"
-                
-                LeaderboardEntry(
-                    name = name,
-                    points = "${user.totalXp} XP",
-                    title = title,
-                    rank = "", // will be calculated below
-                    isPrimary = false,
-                    isSecondary = false
-                )
-            } ?: emptyList()
-            
-            // Hitung ulang ranking (1st, 2nd, 3rd) dan warna medali (Primary/Secondary)
-            val newLeaderboard = fetchedPlayers.take(3).mapIndexed { index, entry ->
-                val rankStr = when (index) {
-                    0 -> "1st"
-                    1 -> "2nd"
-                    2 -> "3rd"
-                    else -> "${index + 1}th"
-                }
-                entry.copy(
-                    rank = rankStr,
-                    isPrimary = index == 0,
-                    isSecondary = index == 1
-                )
+            // Add mission completion bonus (same as DB trigger: +50 XP, +10 coins)
+            if (isComplete) {
+                bonusXp += 50
+                bonusCoins += 10
             }
-            
+
+            val newTotalXp = state.totalXp + bonusXp
+            val newCoins = state.totalCoins + bonusCoins
+            // Recalculate level locally (same formula as DB: level = total_xp / 100 + 1)
+            val newLevel = (newTotalXp / 100) + 1
+
+            val updatedMissions = if (isComplete) {
+                emptyList()
+            } else {
+                state.activeMissions.map { mission ->
+                    mission.copy(currentProgress = newProgress)
+                }.ifEmpty {
+                    listOf(ActiveMission(title = "Membuang sampah", currentProgress = newProgress, targetProgress = 5))
+                }
+            }
+
+            state.copy(
+                totalXp = newTotalXp,
+                totalCoins = newCoins,
+                userLevel = newLevel,
+                xpForCurrentLevel = (newLevel - 1) * 100,
+                xpForNextLevel = newLevel * 100,
+                streak = if (isComplete) state.streak + 1 else state.streak,
+                isMissionCompletedToday = isComplete,
+                activeMissions = updatedMissions
+            )
+        }
+
+        // Background sync: silently correct any discrepancies with server
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(500) // Small delay to let DB triggers complete
+            val profileResult = homeRepository.getUserProfile()
+            profileResult.onSuccess { profile ->
+                _uiState.update { state ->
+                    state.copy(
+                        totalXp = profile.totalXp,
+                        totalCoins = profile.coins,
+                        userLevel = profile.level,
+                        xpForCurrentLevel = (profile.level - 1) * 100,
+                        xpForNextLevel = profile.level * 100,
+                        streak = profile.currentStreak
+                    )
+                }
+            }
+        }
+    }
+
+    /** Full refresh from server (used on login, pull-to-refresh, etc.) */
+    fun refreshData() {
+        loadHomeData()
+    }
+
+    private fun loadHomeData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+            // Fetch all dashboard data concurrently
+            val profileDeferred = async { homeRepository.getUserProfile() }
+            val missionsDeferred = async { homeRepository.getActiveMissions() }
+            val articlesDeferred = async { homeRepository.getEducationalArticles() }
+            val leaderboardDeferred = async { homeRepository.getTopPlayerProfiles() }
+            val shopDeferred = async { homeRepository.getPointShopItems() }
+
+            val profileResult = profileDeferred.await()
+            val missionsResult = missionsDeferred.await()
+            val articlesResult = articlesDeferred.await()
+            val leaderboardResult = leaderboardDeferred.await()
+            val shopResult = shopDeferred.await()
+
             if (profileResult.isSuccess) {
-                val profile = profileResult.getOrNull()
-                if (profile != null) {
-                    val firstName = profile.name.split(" ").firstOrNull()?.replaceFirstChar { 
-                        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() 
-                    } ?: profile.username
+                val profile = profileResult.getOrThrow()
+                val firstName = profile.name.split(" ").firstOrNull()?.replaceFirstChar { 
+                    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() 
+                } ?: profile.username
 
-                    // Asumsi 1 level = 100 XP
-                    val currentBaseXp = (profile.level - 1) * 100
-                    val nextBaseXp = profile.level * 100
+                val formattedBirthDate = try {
+                    if (profile.birthDate != null) {
+                        val date = java.time.LocalDate.parse(profile.birthDate)
+                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("id", "ID"))
+                        date.format(formatter)
+                    } else "Belum diatur"
+                } catch (e: Exception) {
+                    profile.birthDate ?: "Belum diatur"
+                }
 
-                    val incompleteTasks = tasksResult.getOrNull()?.map { it.title } ?: emptyList()
-                    val (organic, inorganic) = wasteCountsResult.getOrNull() ?: Pair(0, 0)
+                val todayStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                val completedTodayMissions = profile.lastMissionCompletedDate == todayStr 
+                    || (missionsResult.isSuccess && missionsResult.getOrNull()?.isEmpty() == true)
 
-                    _uiState.update { 
-                        it.copy(
-                            userName = firstName,
-                            userLevel = profile.level,
-                            currentPoints = profile.coins,
-                            totalXp = profile.totalXp,
-                            xpForCurrentLevel = currentBaseXp,
-                            xpForNextLevel = nextBaseXp,
-                            streak = profile.currentStreak,
-                            incompleteTasks = incompleteTasks,
-                            leaderboard = newLeaderboard,
-                            organicCount = organic,
-                            inorganicCount = inorganic
-                        ) 
-                    }
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        userName = firstName,
+                        username = profile.username,
+                        fullName = profile.name,
+                        birthDate = formattedBirthDate,
+                        avatarId = 1,
+                        userLevel = profile.level,
+                        totalCoins = profile.coins,
+                        totalXp = profile.totalXp,
+                        xpForCurrentLevel = (profile.level - 1) * 100,
+                        xpForNextLevel = profile.level * 100,
+                        streak = profile.currentStreak,
+                        isActive = true,
+                        isMissionCompletedToday = completedTodayMissions,
+
+                        activeMissions = missionsResult.getOrNull() ?: emptyList(),
+                        eduArticles = articlesResult.getOrNull() ?: emptyList(),
+                        leaderboard = leaderboardResult.getOrNull() ?: emptyList(),
+                        pointShopItems = shopResult.getOrNull() ?: emptyList()
+                    )
                 }
             } else {
-                // Fallback kalau error
-                val name = authRepository.getLoggedInUserName()
                 _uiState.update { 
                     it.copy(
-                        userName = name, 
-                        leaderboard = newLeaderboard,
-                        incompleteTasks = tasksResult.getOrNull()?.map { it.title } ?: emptyList()
-                    ) 
+                        isLoading = false,
+                        errorMessage = "Gagal memuat profil pahlawanmu. Periksa koneksi internet."
+                    )
                 }
             }
         }
