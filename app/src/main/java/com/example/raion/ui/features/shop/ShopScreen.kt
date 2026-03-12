@@ -1,5 +1,6 @@
-package com.example.raion.ui.features.shop
+﻿package com.example.raion.ui.features.shop
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,6 +49,7 @@ fun ShopScreen(
 ) {
     var selectedCategory by remember { mutableStateOf<ShopCategory?>(null) }
     var inspectedItem by remember { mutableStateOf<PointShopItem?>(null) }
+    var toastMessage by remember { mutableStateOf<String?>(null) } // State for Custom Toast
     
     // Internal optimistic state for the avatar URLs so the UI updates instantly
     var optimisticAvatarUrl by remember(currentAvatarUrl) { mutableStateOf(currentAvatarUrl) }
@@ -62,13 +64,22 @@ fun ShopScreen(
             selectedCategory = categories.first()
         }
     }
+    
+    // Auto timeout for custom toast
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
+            kotlinx.coroutines.delay(2000)
+            toastMessage = null
+        }
+    }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground)
-    ) {
-        Spacer(modifier = Modifier.height(16.dp)) // Top padding for status bar area
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(DesignTokens.Colors.CreamBackground)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp)) // Top padding for status bar area
         
         ShopTopBar(coins = optimisticCoins)
         
@@ -101,6 +112,9 @@ fun ShopScreen(
                     inspectedItem = item
                 }
             },
+            onLockedItemSelected = { item ->
+                toastMessage = "Dibuka Pada Level ${item.minLevel}"
+            },
             modifier = Modifier.weight(0.55f)
         )
         
@@ -113,90 +127,174 @@ fun ShopScreen(
             val isEquipped = item.avatarUrl == optimisticAvatarUrl
             val canAfford = optimisticCoins >= item.price
             
-            AlertDialog(
+            androidx.compose.ui.window.Dialog(
                 onDismissRequest = { 
                     inspectedItem = null
                     // Reset avatar preview to actual equipped avatar when closing inspector
                     activePreviewAvatar = optimisticAvatarUrl 
-                },
-                title = { Text(text = item.name, fontWeight = FontWeight.Bold) },
-                text = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                        SubcomposeAsyncImage(
-                            model = item.imageUrl,
-                            contentDescription = item.name,
-                            modifier = Modifier.size(100.dp),
-                            contentScale = ContentScale.Fit,
-                            loading = {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = DesignTokens.Colors.OrangePrimary, strokeWidth = 2.dp)
-                                }
-                            },
-                            error = {
-                                Image(painter = painterResource(id = R.drawable.clothes1), contentDescription = null, contentScale = ContentScale.Fit)
-                            }
+                }
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color(0xFFFEFDF1), // Cream background matching design
+                    border = BorderStroke(4.dp, Color(0xFF71C2A5)), // Green border
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp).fillMaxWidth()
+                    ) {
+                        // Title
+                        Text(
+                            text = item.name,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp,
+                            color = Color(0xFF61B89C)
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        // Image Box
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.size(110.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                                SubcomposeAsyncImage(
+                                    model = item.imageUrl,
+                                    contentDescription = item.name,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit,
+                                    loading = {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = DesignTokens.Colors.OrangePrimary, strokeWidth = 2.dp)
+                                    },
+                                    error = {
+                                        Image(painter = painterResource(id = R.drawable.img_clothes_1), contentDescription = null, contentScale = ContentScale.Fit)
+                                    }
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(20.dp))
                         
                         if (isEquipped) {
-                            Text(text = "Barang ini sedang kamu pakai sekarang.", textAlign = TextAlign.Center)
+                            Text(text = "Barang ini sedang kamu pakai sekarang.", textAlign = TextAlign.Center, color = Color.DarkGray)
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { 
+                                    inspectedItem = null 
+                                    activePreviewAvatar = optimisticAvatarUrl 
+                                },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF61B89C)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Tutup", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                            }
                         } else if (isOwned) {
-                            Text(text = "Barang ini sudah ada di lemarimu. Apakah kamu ingin memakainya sekarang?", textAlign = TextAlign.Center)
+                            Text(text = "Barang ini sudah ada di lemarimu. Pakai sekarang?", textAlign = TextAlign.Center, color = Color.DarkGray)
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+                                Button(
+                                    onClick = {  
+                                        inspectedItem = null 
+                                        activePreviewAvatar = optimisticAvatarUrl 
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF76D6E)),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Tidak", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                }
+                                Button(
+                                    onClick = { 
+                                        onEquip(item)
+                                        optimisticAvatarUrl = item.avatarUrl // Optimistic instantly flags border
+                                        activePreviewAvatar = item.avatarUrl // Update UI immediately
+                                        inspectedItem = null
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF61B89C)),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Pakai", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                }
+                            }
                         } else {
-                            Text(text = "Harga: 🪙 ${formatCompactNumber(item.price)}\nKoin Kamu: 🪙 ${formatCompactNumber(optimisticCoins)}", textAlign = TextAlign.Center)
+                            // Layar Harga Pembelian
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_gold),
+                                    contentDescription = "Coin",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = formatCompactNumber(item.price),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 18.sp,
+                                    color = Color.Black
+                                )
+                            }
+                            
                             if (!canAfford) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Wah, koinmu belum cukup untuk membeli barang ini.",
+                                    text = "Wah, koinmu belum cukup.",
                                     color = Color.Red,
                                     fontSize = 12.sp,
                                     textAlign = TextAlign.Center
                                 )
                             }
-                        }
-                    }
-                },
-                confirmButton = {
-                    if (!isEquipped) {
-                        Button(
-                            onClick = {
-                                if (isOwned) {
-                                    onEquip(item)
-                                    optimisticAvatarUrl = item.avatarUrl // Optimistic instantly flags border
-                                    activePreviewAvatar = item.avatarUrl // Update UI immediately
-                                    inspectedItem = null
-                                } else if (canAfford) {
-                                    onPurchase(item)
-                                    // Beli berhasil (assumed for Optimism):
-                                    optimisticInventory = optimisticInventory + UserInventoryItem(
-                                        id = "temp_${System.currentTimeMillis()}", // dummy ID
-                                        userId = "temp",
-                                        itemId = item.itemId,
-                                        purchasedAt = ""
-                                    )
-                                    optimisticCoins -= item.price
-                                    optimisticAvatarUrl = item.avatarUrl 
-                                    activePreviewAvatar = item.avatarUrl
-                                    inspectedItem = null
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+                                Button(
+                                    onClick = { 
+                                        inspectedItem = null 
+                                        activePreviewAvatar = optimisticAvatarUrl 
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF76D6E)), // Warna Coral Merah
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Tidak", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                                 }
-                            },colors = ButtonDefaults.buttonColors(
-                                containerColor = DesignTokens.Colors.OrangePrimary
-                            ),
-                            enabled = isOwned || canAfford // Disable buy if not enough coins
-                        ) {
-                            Text(if (isOwned) "Pakai Baju" else "Beli (🪙 ${formatCompactNumber(item.price)})")
+                                Button(
+                                    onClick = { 
+                                        if (canAfford) {
+                                            onPurchase(item)
+                                            // Beli berhasil (assumed for Optimism):
+                                            optimisticInventory = optimisticInventory + UserInventoryItem(
+                                                id = "temp_${System.currentTimeMillis()}", // dummy ID
+                                                userId = "temp",
+                                                itemId = item.itemId,
+                                                purchasedAt = ""
+                                            )
+                                            optimisticCoins -= item.price
+                                            optimisticAvatarUrl = item.avatarUrl 
+                                            activePreviewAvatar = item.avatarUrl
+                                            inspectedItem = null
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF61B89C), // Warna Hijau Mint
+                                        disabledContainerColor = Color.LightGray
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    enabled = canAfford
+                                ) {
+                                    Text("Beli", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                }
+                            }
                         }
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { 
-                        inspectedItem = null 
-                        activePreviewAvatar = currentAvatarUrl // Revert preview
-                    }) {
-                        Text("Tutup", color = Color.Gray)
                     }
                 }
-            )
+            }
             
             // Saat di-inspect, ganti wajah dinosaurus utama dengan avatar pakaian ini (Live Preview)
             LaunchedEffect(item) {
@@ -205,65 +303,88 @@ fun ShopScreen(
                 }
             }
         }
+        
+        } // End of Column Content
+
+        // Custom Toast Overlay
+        androidx.compose.animation.AnimatedVisibility(
+            visible = toastMessage != null,
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically(initialOffsetY = { it }),
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 120.dp) // Posisi toast melayang di atas navbar
+        ) {
+            toastMessage?.let { msg ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF76D6E), // Coral Red background matching design
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                ) {
+                    Text(
+                        text = msg,
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun ShopTopBar(coins: Int) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.Transparent)
-            .padding(horizontal = DesignTokens.Dimensions.PaddingLarge),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = DesignTokens.Dimensions.PaddingLarge)
     ) {
-        // Title (Left Aligned)
-        Column {
-            Text(
-                text = "Toko",
-                fontSize = 16.sp,
-                color = Color.DarkGray,
-                fontWeight = FontWeight.Medium
+        // Left side: Coins
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .background(Color(0xFFFFDF8D), RoundedCornerShape(8.dp))
+                .border(1.dp, Color(0xFFE5C87A), RoundedCornerShape(8.dp))
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_gold),
+                contentDescription = "Coin",
+                modifier = Modifier.size(16.dp)
             )
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Gobi",
+                text = formatCompactNumber(coins),
+                fontSize = 14.sp,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 28.sp,
-                color = Color.Black
+                color = Color(0xFF8C6200)
             )
         }
 
-        // Right side: Coins and Share
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Coin indicator
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .background(Color(0xFFFFDF8D), RoundedCornerShape(8.dp))
-                    .border(1.dp, Color(0xFFE5C87A), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Text("🪙", fontSize = 14.sp)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = formatCompactNumber(coins),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF8C6200)
-                )
-            }
+        // Center Title
+        Text(
+            text = "Toko",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.Black,
+            modifier = Modifier.align(Alignment.Center)
+        )
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Share Icon
-            IconButton(onClick = { /* TODO: Share action */ }) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Share",
-                    tint = Color.Black
-                )
-            }
+        // Right side: Share Icon
+        IconButton(
+            onClick = { /* TODO: Share action */ },
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Share,
+                contentDescription = "Share",
+                tint = Color.Black
+            )
         }
     }
 }
@@ -303,7 +424,7 @@ fun CharacterShowcase(
                 }
             },
             error = {
-                Image(painter = painterResource(id = R.drawable.dinoprofile), contentDescription = null, contentScale = ContentScale.Fit)
+                Image(painter = painterResource(id = R.drawable.img_dino_default), contentDescription = null, contentScale = ContentScale.Fit)
             }
         )
     }
@@ -370,7 +491,7 @@ fun CategoryTabItem(
                 }
             },
             error = {
-                Image(painter = painterResource(id = R.drawable.cap1), contentDescription = null, contentScale = ContentScale.Fit)
+                Image(painter = painterResource(id = R.drawable.img_cap_1), contentDescription = null, contentScale = ContentScale.Fit)
             }
         )
     }
@@ -384,6 +505,7 @@ fun ShopItemGrid(
     currentLevel: Int,
     currentAvatarUrl: String,
     onItemSelected: (PointShopItem) -> Unit,
+    onLockedItemSelected: (PointShopItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Filter item berdasarkan kategori yang sedang dipilih (jika ada), lalu urutkan
@@ -429,7 +551,8 @@ fun ShopItemGrid(
                 isOwned = isOwned,
                 isEquipped = isEquipped,
                 isLevelLocked = isLevelLocked,
-                onClick = { onItemSelected(item) }
+                onClick = { onItemSelected(item) },
+                onLockedClick = { onLockedItemSelected(item) }
             )
         }
     }
@@ -441,7 +564,8 @@ fun ShopItemCard(
     isOwned: Boolean,
     isEquipped: Boolean,
     isLevelLocked: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLockedClick: () -> Unit = {}
 ) {
     val isAvailable = item.isActive && !isLevelLocked
     val cardBg = if (isAvailable) Color(0xFFF9F9F9) else Color(0xFFE0E0E0)
@@ -457,7 +581,10 @@ fun ShopItemCard(
             .clip(RoundedCornerShape(16.dp))
             .background(cardShadow) // Outer shadow block
             .border(width = borderWidth, color = borderColor, shape = RoundedCornerShape(16.dp))
-            .clickable(enabled = isAvailable) { onClick() },
+            .clickable(enabled = isAvailable || isLevelLocked) { 
+                if (isAvailable) onClick()
+                else if (isLevelLocked) onLockedClick()
+            },
         contentAlignment = Alignment.Center
     ) {
         // Inner lifted button
@@ -530,7 +657,7 @@ fun ShopItemCard(
                         }
                     },
                     error = {
-                        Image(painter = painterResource(id = R.drawable.clothes1), contentDescription = null, contentScale = ContentScale.Crop)
+                        Image(painter = painterResource(id = R.drawable.img_clothes_1), contentDescription = null, contentScale = ContentScale.Crop)
                     }
                 )
                 
@@ -554,7 +681,11 @@ fun ShopItemCard(
                             .background(Color.White.copy(alpha = 0.9f))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Text("🪙", fontSize = 12.sp)
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_gold),
+                            contentDescription = "Coin",
+                            modifier = Modifier.size(14.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = formatCompactNumber(item.price),

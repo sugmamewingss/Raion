@@ -19,6 +19,8 @@ data class UserProfile(
     val level: Int = 1,
     @SerialName("coins")
     val coins: Int = 0,
+    @SerialName("lifetime_coins")
+    val lifetimeCoins: Int = 0,
     @SerialName("current_streak")
     val currentStreak: Int = 0,
     @SerialName("highest_streak")
@@ -30,5 +32,7 @@ data class UserProfile(
     @SerialName("current_avatar_url")
     val currentAvatarUrl: String? = null,
     @SerialName("equipped_item_id")
-    val equippedItemId: String? = null
+    val equippedItemId: String? = null,
+    @SerialName("total_correct_answers")
+    val totalCorrectAnswers: Int = 0
 )

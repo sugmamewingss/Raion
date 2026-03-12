@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.home
+﻿package com.example.raion.ui.features.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -118,7 +118,8 @@ fun HomeScreen(
                     onWardrobeClick = {
                         // Navigate horizontally to the Shop tab (index 2)
                         coroutineScope.launch { pagerState.animateScrollToPage(2) }
-                    }
+                    },
+                    onStreakClick = onNavigateToDiary
                 )
             }
         }
@@ -180,10 +181,10 @@ fun CustomBottomNavBar(
     onItemSelected: (Int) -> Unit
 ) {
     val navItems = listOf(
-        Pair(R.drawable.navbar1, "Beranda"),
-        Pair(R.drawable.navbar2, "Cerita"),
-        Pair(R.drawable.navbar3, "Toko"),
-        Pair(R.drawable.navbar4, "Profil")
+        Pair(R.drawable.ic_nav_home, "Beranda"),
+        Pair(R.drawable.ic_nav_book, "Cerita"),
+        Pair(R.drawable.ic_nav_shop, "Toko"),
+        Pair(R.drawable.ic_nav_profile, "Profil")
     )
 
     Column {

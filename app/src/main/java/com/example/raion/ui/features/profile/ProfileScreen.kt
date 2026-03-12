@@ -20,7 +20,8 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onEditProfileClick: () -> Unit,
     onStartDailyMission: () -> Unit,
-    onWardrobeClick: () -> Unit
+    onWardrobeClick: () -> Unit,
+    onStreakClick: () -> Unit
 ) {
     // Scaffold or Main Container for Profile Tab
     Column(
@@ -66,11 +67,11 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 5. Streak & Tasks Retention Card
             StreakRetentionCard(
                 streak = uiState.streak,
                 isMissionCompletedToday = uiState.isMissionCompletedToday,
-                onTaskClick = onStartDailyMission
+                onTaskClick = onStartDailyMission,
+                onStreakClick = onStreakClick
             )
 
             Spacer(modifier = Modifier.height(32.dp))

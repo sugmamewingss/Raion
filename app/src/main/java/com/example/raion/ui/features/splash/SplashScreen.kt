@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.splash
+﻿package com.example.raion.ui.features.splash
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -70,14 +70,14 @@ fun SplashScreen(
                 when (state) {
                     0 -> {
                         Image(
-                            painter = painterResource(id = R.drawable.dino_face),
+                            painter = painterResource(id = R.drawable.img_dino_face),
                             contentDescription = "App Logo",
                             modifier = Modifier.size(200.dp)
                         )
                     }
                     1 -> {
                         Text(
-                            text = "BinGoo",
+                            text = "BinGo",
                             style = MaterialTheme.typography.headlineLarge,
                             color = Color.White,
                             fontWeight = FontWeight.ExtraBold,

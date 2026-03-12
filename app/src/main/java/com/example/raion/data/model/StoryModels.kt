@@ -30,3 +30,12 @@ data class UserStoryProgressDto(
     @SerialName("is_completed") val isCompleted: Boolean = false,
     @SerialName("unlocked_at") val unlockedAt: String? = null
 )
+
+@Serializable
+data class StoryRewardResponse(
+    val status: String,
+    @SerialName("chapter_id") val chapterId: String? = null,
+    @SerialName("chapter_is_fully_completed") val chapterIsFullyCompleted: Boolean = false,
+    @SerialName("granted_xp") val grantedXp: Int = 0,
+    @SerialName("granted_coins") val grantedCoins: Int = 0
+)

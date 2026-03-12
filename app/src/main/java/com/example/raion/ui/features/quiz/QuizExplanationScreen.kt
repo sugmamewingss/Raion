@@ -1,7 +1,7 @@
 package com.example.raion.ui.features.quiz
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -9,6 +9,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,159 +28,128 @@ data class ExplanationItem(
 
 @Composable
 fun QuizExplanationScreen(
+    episodeId: String,
+    viewModel: QuizExplanationViewModel = hiltViewModel(),
     onNavigateHome: () -> Unit,
     onRetryQuiz: () -> Unit
 ) {
-    val creamBgColor = Color(0xFFFCFDF2)
+    val uiState by viewModel.uiState.collectAsState()
     val darkGreenColor = Color(0xFF1D5C42)
     val lightGreenColor = Color(0xFFEAF5EA)
-
-    val explanations = listOf(
-        ExplanationItem(
-            1,
-            "Mengapa T-Rex di dalam cerita disebut merusak keindahan hutan?",
-            "Karena membuang sampah kaleng sembarangan",
-            "T-Rex membuang sampah kaleng sembarangan di hutan salju, yang merusak keindahan tempat tersebut dan mencemari alam."
-        ),
-        ExplanationItem(
-            2,
-            "Sampah kaleng yang dibuang T-Rex terbuat dari logam. Berapa lama yang dibutuhkan alam untuk menghancurkan kaleng?",
-            "50 sampai 100 tahun",
-            "Kaleng logam sulit terurai secara alami dan membutuhkan waktu yang sangat lama, sekitar 50 hingga 100 tahun."
-        ),
-        ExplanationItem(
-            3,
-            "Hutan salju yang bersih menghasilkan udara segar. Gas apa yang paling kita butuhkan dari udara segar tersebut?",
-            "Oksigen",
-            "Pohon menghasilkan oksigen yang sangat penting bagi makhluk hidup untuk bernapas."
-        ),
-        ExplanationItem(
-            4,
-            "Apa yang akan terjadi jika sampah kaleng menumpuk di hutan dan tertutup salju?",
-            "Tanah menjadi tercemar dan hewan bisa terluka",
-            "Sampah logam dapat melukai hewan dan bahan kimianya dapat meresap membuat tanah tercemar."
-        ),
-        ExplanationItem(
-            5,
-            "Bagaimana sikapmu jika melihat temanmu membuang sampah sembarangan di hutan?",
-            "Menegur dengan sopan dan mengajaknya mencari tempat sampah",
-            "Menegur dengan sopan adalah cara terbaik untuk mengingatkan teman tanpa memicu pertengkaran."
-        ),
-        ExplanationItem(
-            6,
-            "Aku adalah julukan untuk benda yang bisa dipakai kembali agar tidak jadi sampah, seperti botol minum. Siapakah aku?",
-            "Reusable (Guna Ulang)",
-            "Barang reusable (guna ulang) didesain agar bisa dipakai berkali-kali untuk mengurangi jumlah sampah plastik."
-        ),
-        ExplanationItem(
-            7,
-            "Sampah kaleng dan botol kaca sebaiknya dibuang ke tempat sampah berwarna apa?",
-            "Kuning (Daur ulang)",
-            "Tempat sampah kuning biasanya ditujukan untuk menampung sampah anorganik yang dapat didaur ulang seperti plastik, kaca, dan kaleng."
-        ),
-        ExplanationItem(
-            8,
-            "Pohon di hutan salju membantu mendinginkan bumi. Apa nama peristiwa memanasnya suhu bumi akibat hutan yang rusak?",
-            "Pemanasan Global",
-            "Pemanasan global adalah meningkatnya suhu rata-rata atmosfer bumi akibat efek rumah kaca, sering dipicu oleh kerusakan hutan."
-        ),
-        ExplanationItem(
-            9,
-            "Di dunia nyata, kaleng bekas bisa dilebur untuk dibuat menjadi benda baru. Apa nama proses ini?",
-            "Daur Ulang (Recycle)",
-            "Daur ulang adalah proses mengubah bahan bekas menjadi material baru untuk mencegah pemborosan dan pencemaran."
-        ),
-        ExplanationItem(
-            10,
-            "Apa pesan moral utama dari komik petualangan Dino tadi?",
-            "Menjaga kebersihan adalah tugas kita bersama, bukan hanya Dino",
-            "Kebersihan lingkungan merupakan tanggung jawab kolektif semua makhluk, bukan hanya perorangan."
-        ),
-        ExplanationItem(
-            11,
-            "Jika seekor Brontosaurus membuang aku ke tanah pada zaman purba jutaan tahun lalu, mungkin sampai hari ini aku masih ada dan belum hancur. Aku tidak bisa dimakan oleh tanah (tidak bisa membusuk). Siapakah aku?",
-            "Plastik",
-            "Plastik adalah bahan buatan yang sangat sulit terurai secara alami, sehingga umurnya dapat mencapai ribuan hingga jutaan tahun."
-        )
-    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         com.example.raion.ui.features.auth.components.WaveBackground()
         Scaffold(
             containerColor = Color.Transparent,
-        topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 40.dp, bottom = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Pembahasan",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.Black
-                )
-                Text(
-                    text = "Episode 1: Si Trex",
-                    fontSize = 16.sp,
-                    color = darkGreenColor
-                )
-            }
-        },
-        bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(16.dp)
-            ) {
-                Button(
-                    onClick = onNavigateHome,
-                    colors = ButtonDefaults.buttonColors(containerColor = darkGreenColor),
-                    shape = RoundedCornerShape(12.dp),
+            topBar = {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .padding(top = 40.dp, bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Kembali ke Beranda",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        text = "Pembahasan",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "Review Soal Kuis", // Optional: show episode ID context if needed
+                        fontSize = 16.sp,
+                        color = darkGreenColor
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = onRetryQuiz,
-                    border = BorderStroke(1.dp, darkGreenColor),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = darkGreenColor),
-                    shape = RoundedCornerShape(12.dp),
+            },
+            bottomBar = {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .background(Color.White)
+                        .padding(16.dp)
                 ) {
-                    Text(
-                        text = "Kerjakan Ulang",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Button(
+                        onClick = onNavigateHome,
+                        colors = ButtonDefaults.buttonColors(containerColor = darkGreenColor),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Text(
+                            text = "Kembali ke Beranda",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = onRetryQuiz,
+                        border = BorderStroke(1.dp, darkGreenColor),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = darkGreenColor),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Text(
+                            text = "Kerjakan Ulang",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        ) { paddingValues ->
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = com.example.raion.ui.theme.DesignTokens.Colors.TealPrimary)
+                }
+            } else if (!uiState.errorMessage.isNullOrEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = uiState.errorMessage ?: "Terjadi kesalahan", color = Color.Red)
+                }
+            } else if (uiState.questions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Belum ada pembahasan untuk episode ini.", color = Color.Gray)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    itemsIndexed(uiState.questions) { index, q ->
+                        val correctAnswer = q.options.getOrNull(q.correctAnswerIndex) ?: ""
+                        val item = ExplanationItem(
+                            id = index + 1,
+                            question = q.questionText,
+                            answer = correctAnswer,
+                            explanation = q.explanation ?: "Tidak ada pembahasan detail."
+                        )
+                        ExplanationCard(item = item, darkGreenColor = darkGreenColor, lightGreenColor = lightGreenColor)
+                    }
                 }
             }
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            itemsIndexed(explanations) { index, item ->
-                ExplanationCard(item = item, darkGreenColor = darkGreenColor, lightGreenColor = lightGreenColor)
-            }
-        }
-    }
     }
 }
 

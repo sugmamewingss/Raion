@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.profile
+﻿package com.example.raion.ui.features.profile
 
 import androidx.compose.foundation.Image
 import coil.compose.SubcomposeAsyncImage
@@ -166,7 +166,7 @@ fun EditProfileScreen(
                 },
                 error = {
                     Image(
-                        painter = painterResource(id = R.drawable.dinoprofile),
+                        painter = painterResource(id = R.drawable.img_dino_default),
                         contentDescription = "Hero Avatar",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit

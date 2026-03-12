@@ -1,128 +1,88 @@
-package com.example.raion.ui.features.quiz
+﻿package com.example.raion.ui.features.quiz
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.raion.R
 import com.example.raion.ui.theme.DesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuizPrepScreen(
+    episodeId: String,
+    viewModel: QuizPrepViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onStartQuiz: () -> Unit = {} // Placeholder for future quiz execution
+    onStartQuiz: () -> Unit = {}
 ) {
-    val creamBgColor = Color(0xFFFCFDF2) // Warm cream background
+    val uiState by viewModel.uiState.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         com.example.raion.ui.features.auth.components.WaveBackground()
         Scaffold(
             containerColor = Color.Transparent,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Persiapan",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.Black
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.Black
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+            topBar = {
+                QuizTopNavBar(
+                    title = "Persiapan",
+                    onBackClick = onNavigateBack
                 )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp)
-        ) {
-            // Mascot Talk Bubble Card
-            MascotBubbleCard()
+            }
+        ) { paddingValues ->
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = DesignTokens.Colors.TealPrimary)
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 24.dp)
+                ) {
+                    // Mascot Talk Bubble Card
+                    MascotBubbleCard()
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            // Details Container
-            PrepDetailsContainer(onStartQuiz = onStartQuiz)
-        }
-    }
-    }
-}
-
-@Composable
-fun MascotBubbleCard() {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFF1D5C42)), // Dark Green Border
-        color = Color.White,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 16.dp, end = 20.dp, top = 20.dp, bottom = 0.dp) // Bottom padding 0 to let mascot overflow slightly if needed, adjust if cut off
-        ) {
-            // Mascot Image (Left)
-            Image(
-                painter = painterResource(id = R.drawable.dinothinking),
-                contentDescription = "Mascot Thinking",
-                modifier = Modifier
-                    .width(190.dp)
-                    .height(210.dp)
-                    .offset(x = 9.dp, y = 12.dp), // Shift right by 9dp, up 12dp
-                contentScale = ContentScale.Fit
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Text (Right)
-            Text(
-                text = "Sudah siap\nuntuk\nmengerjakan\nTantangan\nJenius, Sobat\nGobi?",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(bottom = 16.dp)
-            )
+                    // Details Container
+                    PrepDetailsContainer(
+                        chapter = uiState.chapter,
+                        episode = uiState.episode,
+                        questionsCount = uiState.questionsCount,
+                        onStartQuiz = onStartQuiz
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
+fun PrepDetailsContainer(
+    chapter: com.example.raion.data.model.quiz.QuizChapter?,
+    episode: com.example.raion.data.model.quiz.QuizEpisode?,
+    questionsCount: Int,
+    onStartQuiz: () -> Unit
+) {
     val cardColor = Color(0xFF1D5C42) // Dark green from design
 
     Surface(
@@ -149,39 +109,39 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                 Column(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
-                    // Bab Info
-                    InfoBox(
-                        title = "Bab 1",
-                        subtitle = "Buang sampah sembarangan",
-                        iconRes = R.drawable.book,
-                        badges = {
-                            Row {
-                                Badge(text = "+50 XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Badge(text = "+150", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Badge(text = "2 Episode", bgColor = Color(0xFFDDF5E6), textColor = Color(0xFF388E3C))
+                    if (chapter != null && episode != null) {
+                        // Bab Info
+                        InfoBox(
+                            title = "Bab ${chapter.chapterNumber}",
+                            subtitle = chapter.title,
+                            iconRes = R.drawable.ic_book,
+                            badges = {
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    Badge(text = "+${chapter.bonusXp} XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Badge(text = "+${chapter.bonusCoins}", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
+                                }
                             }
-                        }
-                    )
+                        )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    // Episode Info
-                    InfoBox(
-                        title = "Episode 1",
-                        subtitle = "Si Trex",
-                        iconRes = R.drawable.paper,
-                        badges = {
-                            Row {
-                                Badge(text = "+50 XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Badge(text = "+150", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
+                        // Episode Info
+                        InfoBox(
+                            title = "Episode ${episode.episodeNumber}",
+                            subtitle = episode.title,
+                            iconRes = R.drawable.ic_paper,
+                            badges = {
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    Badge(text = "+${episode.rewardXp} XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Badge(text = "+${episode.rewardCoins}", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
+                                }
                             }
-                        }
-                    )
+                        )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
 
                     // Question Count Info
                     Surface(
@@ -194,7 +154,7 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(10.dp)
                         ) {
-                            // Conceptual clock icon placeholder, we can use an outline circle with text or image
+                            // Conceptual clock icon placeholder
                             Surface(
                                 shape = CircleShape,
                                 border = BorderStroke(1.5.dp, Color(0xFF5F7D93)), // Slate grey border for clock
@@ -233,7 +193,7 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "10 Soal",
+                                    text = "$questionsCount Soal",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = Color.DarkGray
@@ -263,54 +223,6 @@ fun PrepDetailsContainer(onStartQuiz: () -> Unit) {
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun InfoBox(
-    title: String,
-    subtitle: String,
-    iconRes: Int,
-    badges: @Composable () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFF1D5C42)), // Green border
-        color = Color.White,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = "$title Icon",
-                modifier = Modifier.size(34.dp),
-                contentScale = ContentScale.Fit
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
-                Text(
-                    text = title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.Black
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.DarkGray
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                badges()
             }
         }
     }

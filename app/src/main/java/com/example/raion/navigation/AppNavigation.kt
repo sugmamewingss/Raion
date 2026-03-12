@@ -23,6 +23,7 @@ import com.example.raion.ui.features.auth.register.RegisterScreen
 import com.example.raion.ui.features.auth.register.RegisterViewModel
 import com.example.raion.ui.features.onboarding.OnboardingScreen
 import com.example.raion.ui.features.splash.SplashScreen
+import com.example.raion.ui.features.splash.LoadingScreen
 import com.example.raion.ui.features.home.HomeScreen
 
 @Composable
@@ -111,8 +112,21 @@ fun AppNavigation() {
                 },
                 onFinishRegister = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("home") {
+                        // After register, redirect to loading screen FIRST instead of home to show educational trivia
+                        navController.navigate("loading") {
                             popUpTo("auth_selection") { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        composable("loading") { backStackEntry ->
+            LoadingScreen(
+                onNavigateNext = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("home") {
+                            popUpTo("loading") { inclusive = true }
                         }
                     }
                 }
@@ -205,7 +219,7 @@ fun AppNavigation() {
                 },
                 onMysteryBoxClick = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("under_development")
+                        navController.navigate("mission_reward")
                     }
                 }
             )
@@ -225,6 +239,9 @@ fun AppNavigation() {
             val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel(homeEntry)
             val uiState by homeViewModel.uiState.collectAsState()
 
+            val activeMission = uiState.activeMissions.firstOrNull()
+            val targetProgress = activeMission?.targetProgress ?: 5
+
             com.example.raion.ui.features.mission.MissionDetailScreen(
                 onNavigateBack = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
@@ -235,76 +252,29 @@ fun AppNavigation() {
                 userLevel = uiState.userLevel,
                 missionsCompleted = uiState.missionsCompleted,
                 totalXp = uiState.totalXp,
-                totalCoins = uiState.totalCoins,
+                totalCoins = uiState.lifetimeCoins,
+                avatarUrl = uiState.currentAvatarUrl,
+                isMissionCompletedToday = uiState.isMissionCompletedToday,
+                targetProgress = targetProgress,
                 onStartMission = {
                     navController.navigate("mission")
-                },
-                onNavigateToMissionRincian = {
-                    navController.navigate("mission_rincian")
                 }
             )
         }
 
-        // ===== UNDER DEVELOPMENT: Slide Horizontal (from Alfi) =====
+        // ===== MISSION REWARD: Slide Horizontal =====
         composable(
-            "under_development",
+            "mission_reward",
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
         ) { backStackEntry ->
-            com.example.raion.ui.features.mission.UnderDevelopmentScreen(
+            com.example.raion.ui.features.mission.MissionRewardScreen(
                 onBackClick = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
                     }
-                }
-            )
-        }
-
-        // --- Mission Rincian Screen ---
-        composable(
-            route = "mission_rincian",
-            enterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
-            },
-            exitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> -fullWidth },
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> -fullWidth },
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
-            },
-            popExitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            }
-        ) { backStackEntry ->
-            // Retrieve data from HomeViewModel to display accurate XP and Coins
-            val homeEntry = remember(backStackEntry) {
-                navController.getBackStackEntry("home")
-            }
-            val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel(homeEntry)
-            val uiState by homeViewModel.uiState.collectAsState()
-
-            com.example.raion.ui.features.mission.MissionRincianScreen(
-                totalXp = uiState.totalXp,
-                totalCoins = uiState.totalCoins,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onStartMission = {
-                    navController.navigate("mission")
                 }
             )
         }
@@ -393,9 +363,9 @@ fun AppNavigation() {
                         navController.popBackStack()
                     }
                 },
-                onNavigateToEpisodes = {
+                onNavigateToEpisodes = { chapterId ->
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("quiz_episode")
+                        navController.navigate("quiz_episode/$chapterId")
                     }
                 }
             )
@@ -403,21 +373,23 @@ fun AppNavigation() {
 
         // ===== QUIZ EPISODE: Slide Horizontal =====
         composable(
-            "quiz_episode",
+            "quiz_episode/{chapterId}",
+            arguments = listOf(navArgument("chapterId") { type = NavType.StringType }),
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
         ) { backStackEntry ->
+            val chapterId = backStackEntry.arguments?.getString("chapterId") ?: ""
             com.example.raion.ui.features.quiz.QuizEpisodeScreen(
                 onNavigateBack = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
                     }
                 },
-                onNavigateToPrep = {
+                onNavigateToPrep = { episodeId ->
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("quiz_prep")
+                        navController.navigate("quiz_prep/$episodeId")
                     }
                 }
             )
@@ -425,21 +397,24 @@ fun AppNavigation() {
 
         // ===== QUIZ PREP: Slide Horizontal =====
         composable(
-            "quiz_prep",
+            "quiz_prep/{episodeId}",
+            arguments = listOf(navArgument("episodeId") { type = NavType.StringType }),
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
         ) { backStackEntry ->
+            val episodeId = backStackEntry.arguments?.getString("episodeId") ?: ""
             com.example.raion.ui.features.quiz.QuizPrepScreen(
+                episodeId = episodeId,
                 onNavigateBack = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
                     }
                 },
-                onStartQuiz = {
+                onStartQuiz = { 
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("quiz_question")
+                        navController.navigate("quiz_question/$episodeId")
                     }
                 }
             )
@@ -447,13 +422,16 @@ fun AppNavigation() {
 
         // ===== QUIZ QUESTION: Slide Horizontal =====
         composable(
-            "quiz_question",
+            "quiz_question/{episodeId}",
+            arguments = listOf(navArgument("episodeId") { type = NavType.StringType }),
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
         ) { backStackEntry ->
+            val episodeId = backStackEntry.arguments?.getString("episodeId") ?: ""
             com.example.raion.ui.features.quiz.QuizQuestionScreen(
+                episodeId = episodeId,
                 onNavigateBack = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()
@@ -466,8 +444,8 @@ fun AppNavigation() {
                 },
                 onQuizFinished = { correctCount ->
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("quiz_complete/$correctCount") {
-                            popUpTo("quiz_question") { inclusive = true }
+                        navController.navigate("quiz_complete/$episodeId/$correctCount") {
+                            popUpTo("quiz_question/{episodeId}") { inclusive = true }
                         }
                     }
                 }
@@ -498,23 +476,28 @@ fun AppNavigation() {
 
         // ===== QUIZ COMPLETE: Slide Horizontal =====
         composable(
-            "quiz_complete/{correctCount}",
-            arguments = listOf(navArgument("correctCount") { type = NavType.IntType }),
+            "quiz_complete/{episodeId}/{correctCount}",
+            arguments = listOf(
+                navArgument("episodeId") { type = NavType.StringType },
+                navArgument("correctCount") { type = NavType.IntType }
+            ),
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
         ) { backStackEntry ->
+            val episodeId = backStackEntry.arguments?.getString("episodeId") ?: ""
             val correctCount = backStackEntry.arguments?.getInt("correctCount") ?: 0
 
             // Optionally, we could save the XP and Coins to the backend here like we did for Mission.
             // For now, we focus on the UI flow.
             
             com.example.raion.ui.features.quiz.QuizCompleteScreen(
+                episodeId = episodeId,
                 correctAnswersCount = correctCount,
                 onNavigateToExplanation = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                        navController.navigate("quiz_explanation")
+                        navController.navigate("quiz_explanation/$episodeId")
                     }
                 },
                 onRetryQuiz = {
@@ -530,13 +513,16 @@ fun AppNavigation() {
 
         // ===== QUIZ EXPLANATION: Slide Horizontal =====
         composable(
-            "quiz_explanation",
+            "quiz_explanation/{episodeId}",
+            arguments = listOf(navArgument("episodeId") { type = NavType.StringType }),
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(350)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(350)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(350)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(350)) }
         ) { backStackEntry ->
+            val episodeId = backStackEntry.arguments?.getString("episodeId") ?: ""
             com.example.raion.ui.features.quiz.QuizExplanationScreen(
+                episodeId = episodeId,
                 onNavigateHome = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.navigate("home") {
@@ -566,16 +552,32 @@ fun AppNavigation() {
                 navController.getBackStackEntry("home")
             }
             val homeViewModel: com.example.raion.ui.features.home.HomeViewModel = hiltViewModel(homeEntry)
+            val diaryViewModel: com.example.raion.ui.features.diary.DiaryViewModel = hiltViewModel()
             val uiState by homeViewModel.uiState.collectAsState()
 
             com.example.raion.ui.features.diary.DiaryScreen(
+                viewModel = diaryViewModel,
                 streak = uiState.streak,
                 isMissionCompletedToday = uiState.isMissionCompletedToday,
                 userName = uiState.fullName,
                 userLevel = uiState.userLevel,
                 missionsCompleted = uiState.missionsCompleted,
+                quizzesCompleted = 0,
                 totalXp = uiState.totalXp,
                 totalCoins = uiState.totalCoins,
+                avatarUrl = uiState.currentAvatarUrl,
+                onNavigateToQuiz = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("quiz")
+                    }
+                },
+                onNavigateToStory = {
+                    if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                        navController.navigate("home") { // Story terhubung ke Beranda (tab index 1)
+                            popUpTo("home") { inclusive = true }
+                        }
+                    }
+                },
                 onNavigateBack = {
                     if (backStackEntry.lifecycle.currentState == Lifecycle.State.RESUMED) {
                         navController.popBackStack()

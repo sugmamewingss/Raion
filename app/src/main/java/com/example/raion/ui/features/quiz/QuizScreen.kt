@@ -1,5 +1,19 @@
-package com.example.raion.ui.features.quiz
+﻿package com.example.raion.ui.features.quiz
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.raion.data.local.UserPreferences
+import com.example.raion.data.model.UserProfile
+import com.example.raion.data.repository.HomeRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+import com.example.raion.data.model.quiz.QuizChapter
+import com.example.raion.data.model.quiz.UserChapterProgress
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,12 +42,32 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.raion.R
 import com.example.raion.ui.theme.DesignTokens
+import androidx.lifecycle.SavedStateHandle
+import com.example.raion.data.model.quiz.QuizEpisode
+import com.example.raion.data.model.quiz.UserQuizProgress
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.style.TextAlign
+import com.example.raion.data.model.quiz.QuizQuestionDto
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.delay
+import com.example.raion.data.model.quiz.QuizResultResponse
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+
 
 @Composable
 fun QuizScreen(
     viewModel: QuizViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onNavigateToEpisodes: () -> Unit = {}
+    onNavigateToEpisodes: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -62,24 +96,54 @@ fun QuizScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 24.dp)
             ) {
+                // 0. Top Navigation
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onNavigateBack, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Kembali",
+                            tint = Color.Black
+                        )
+                    }
+                    Text(
+                        text = "Tantangan Jenius",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.Black,
+                        modifier = Modifier.weight(1f).offset(x = (-24).dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 // 1. Top Profile Header
                 QuizProfileHeader(
                     name = uiState.userProfile?.name ?: "User",
                     level = uiState.userProfile?.level ?: 1,
                     rank = uiState.userRank,
-                    xp = uiState.userProfile?.totalXp ?: 0
+                    xp = uiState.userProfile?.totalXp ?: 0,
+                    avatarUrl = uiState.userProfile?.currentAvatarUrl ?: ""
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // 2. Target Progress Card
-                TargetProgressCard(soalBenar = uiState.quizProgress)
+                TargetProgressCard(
+                    progress = uiState.currentTargetProgress,
+                    maxTarget = uiState.currentTargetMax
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // 3. Challenge List Container
-                ChallengeListContainer(onNavigateToEpisodes = onNavigateToEpisodes)
+                ChallengeListContainer(
+                    chapters = uiState.chapters,
+                    chapterProgress = uiState.chapterProgress,
+                    onNavigateToEpisodes = onNavigateToEpisodes
+                )
             }
         }
     }
@@ -87,20 +151,40 @@ fun QuizScreen(
 }
 
 @Composable
-fun QuizProfileHeader(name: String, level: Int, rank: Int, xp: Int) {
+fun QuizProfileHeader(name: String, level: Int, rank: Int, xp: Int, avatarUrl: String = "") {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
     ) {
         // Avatar
-        Image(
-            painter = painterResource(id = R.drawable.dinoprofile),
+        val fallbackUrl = "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+        val imageToLoad = if (avatarUrl.isNotEmpty()) avatarUrl else fallbackUrl
+        
+        coil.compose.SubcomposeAsyncImage(
+            model = imageToLoad,
             contentDescription = "Avatar",
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
                 .border(2.dp, Color(0xFFD4DAD4), CircleShape),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            loading = {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color(0xFFF09D51),
+                        strokeWidth = 2.dp
+                    )
+                }
+            },
+            error = {
+                Image(
+                    painter = painterResource(id = R.drawable.img_dino_default),
+                    contentDescription = "Avatar fallback",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
         )
         
         Spacer(modifier = Modifier.width(16.dp))
@@ -148,26 +232,39 @@ fun QuizProfileHeader(name: String, level: Int, rank: Int, xp: Int) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // XP Progress Bar
+            // XP Progress Bar Segment
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val xpProgress = (xp % 100) / 100f
-                LinearProgressIndicator(
-                    progress = { xpProgress },
+                // Determine current XP progress inside the current level
+                val currentLevelXp = xp % 100
+                val nextLevelMax = 100
+                val xpRatio = currentLevelXp.toFloat() / nextLevelMax.toFloat()
+                val xpText = "$currentLevelXp / $nextLevelMax XP"
+
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(10.dp)
+                        .background(Color(0xFFE2E2E2), CircleShape)
                         .clip(CircleShape),
-                    color = Color(0xFFF09D51),
-                    trackColor = Color(0xFFE8E8E8),
-                    drawStopIndicator = {}
-                )
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    // Outer bar shadow simulation
+                    Box(modifier = Modifier.fillMaxSize().border(1.dp, Color(0xFFCCCCCC), CircleShape))
+                    // Inner progress
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(xpRatio.coerceIn(0f, 1f))
+                            .background(Color(0xFFF09D51), CircleShape)
+                    )
+                }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "$xp/100 XP",
+                    text = xpText,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = Color.Black
                 )
             }
@@ -176,7 +273,7 @@ fun QuizProfileHeader(name: String, level: Int, rank: Int, xp: Int) {
 }
 
 @Composable
-fun TargetProgressCard(soalBenar: Int) {
+fun TargetProgressCard(progress: Int, maxTarget: Int) {
     val cardColor = Color(0xFF1D5C42) // Dark green from design
     
     Surface(
@@ -205,7 +302,8 @@ fun TargetProgressCard(soalBenar: Int) {
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val progressRatio = soalBenar / 10f
+                    val safeMax = if (maxTarget > 0) maxTarget else 1
+                    val progressRatio = (progress.toFloat() / safeMax).coerceIn(0f, 1f)
                     LinearProgressIndicator(
                         progress = { progressRatio },
                         modifier = Modifier
@@ -218,7 +316,7 @@ fun TargetProgressCard(soalBenar: Int) {
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "$soalBenar/10 Soal Benar",
+                        text = "$progress/$maxTarget Soal Benar",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
@@ -230,7 +328,11 @@ fun TargetProgressCard(soalBenar: Int) {
 }
 
 @Composable
-fun ChallengeListContainer(onNavigateToEpisodes: () -> Unit = {}) {
+fun ChallengeListContainer(
+    chapters: List<com.example.raion.data.model.quiz.QuizChapter>,
+    chapterProgress: List<com.example.raion.data.model.quiz.UserChapterProgress>,
+    onNavigateToEpisodes: (String) -> Unit = {}
+) {
     Surface(
         shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, Color(0xFF1D5C42)), // Green border
@@ -251,35 +353,53 @@ fun ChallengeListContainer(onNavigateToEpisodes: () -> Unit = {}) {
             
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Bab 1 Card (Unlocked)
-            ChallengeCard(
-                title = "Bab 1",
-                subtitle = "Buang sampah sembarangan",
-                episodes = 2,
-                bgColor = Color(0xFFFFF2CD), // Light Yellow
-                borderColor = Color(0xFFDAB46C), // Orange-yellowish border
-                isLocked = false,
-                onClick = onNavigateToEpisodes
-            )
+            if (chapters.isEmpty()) {
+                Text("Belum ada babak kuis.", color = Color.Gray, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+            } else {
+                chapters.forEachIndexed { index, chapter ->
+                    // A chapter is unlocked if it's the first chapter (number 1)
+                    // OR if the PREVIOUS chapter is completed.
+                    val isUnlocked = if (chapter.chapterNumber == 1) {
+                        true
+                    } else {
+                        // Find the previous chapter
+                        val prevChapter = chapters.find { it.chapterNumber == chapter.chapterNumber - 1 }
+                        // Check if previous chapter is in progress list and isCompleted == true
+                        val prevProgress = chapterProgress.find { it.chapterId == prevChapter?.id }
+                        prevProgress?.isCompleted == true
+                    }
+                    
+                    // Style logic (alternating colors like the design)
+                    val isOdd = index % 2 == 0
+                    val bgColor = if (isOdd) Color(0xFFFFF2CD) else Color(0xFFFFE0E8)
+                    val borderColor = if (isOdd) Color(0xFFDAB46C) else Color(0xFFDFA1A1)
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Bab 2 Card (Locked but visible details)
-            ChallengeCard(
-                title = "Bab 2",
-                subtitle = "Raja Daur Ulang?",
-                episodes = 1,
-                bgColor = Color(0xFFFFE0E8), // Light Pink
-                borderColor = Color(0xFFDFA1A1), // Pink border
-                isLocked = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Locked Placeholders
-            LockedPlaceholderCard()
-            Spacer(modifier = Modifier.height(16.dp))
-            LockedPlaceholderCard()
+                    ChallengeCard(
+                        title = "Bab ${chapter.chapterNumber}",
+                        subtitle = chapter.title,
+                        episodes = 0, // In a real app we would join or query episodes count
+                        bonusXp = chapter.bonusXp,
+                        bonusCoins = chapter.bonusCoins,
+                        bgColor = bgColor,
+                        borderColor = borderColor,
+                        isLocked = !isUnlocked,
+                        onClick = {
+                            if (isUnlocked) {
+                                onNavigateToEpisodes(chapter.id)
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                
+                // Keep some locked placeholders for visual padding if we have few chapters
+                if (chapters.size < 3) {
+                    repeat(3 - chapters.size) {
+                        LockedPlaceholderCard()
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+            }
         }
     }
 }
@@ -289,6 +409,8 @@ fun ChallengeCard(
     title: String,
     subtitle: String,
     episodes: Int,
+    bonusXp: Int = 50,
+    bonusCoins: Int = 15,
     bgColor: Color,
     borderColor: Color,
     isLocked: Boolean,
@@ -300,6 +422,7 @@ fun ChallengeCard(
         color = bgColor,
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = !isLocked, onClick = onClick) // Clickable entire surface
     ) {
         Row(
             modifier = Modifier
@@ -309,7 +432,7 @@ fun ChallengeCard(
         ) {
             // Book Icon
             Image(
-                painter = painterResource(id = R.drawable.book), // Assuming book.png is available in drawable
+                painter = painterResource(id = R.drawable.ic_book), // Assuming book.png is available in drawable
                 contentDescription = "Book Icon",
                 modifier = Modifier.size(56.dp),
                 contentScale = ContentScale.Fit
@@ -336,11 +459,9 @@ fun ChallengeCard(
 
                 // Badges Row
                 Row {
-                    Badge(text = "+50 XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
+                    Badge(text = "+$bonusXp XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Badge(text = "+150", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Badge(text = "$episodes Episode", bgColor = Color(0xFFDDF5E6), textColor = Color(0xFF388E3C))
+                    Badge(text = "+$bonusCoins", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
                 }
             }
 
@@ -376,47 +497,3 @@ fun ChallengeCard(
     }
 }
 
-@Composable
-fun Badge(text: String, bgColor: Color, textColor: Color, isCoin: Boolean = false) {
-    Surface(
-        shape = RoundedCornerShape(4.dp),
-        border = BorderStroke(1.dp, textColor.copy(alpha = 0.5f)),
-        color = bgColor
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = text,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
-            if (isCoin) {
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(text = "🪙", fontSize = 10.sp)
-            }
-        }
-    }
-}
-
-@Composable
-fun LockedPlaceholderCard() {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFD6D6D6), // Light structural grey
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(90.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = "Locked Placeholder",
-                tint = Color.White,
-                modifier = Modifier.size(36.dp)
-            )
-        }
-    }
-}

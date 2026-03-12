@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.story
+﻿package com.example.raion.ui.features.story
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -39,40 +39,110 @@ fun StoryScreen(
     onNavigateToEpisode: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // State untuk memicu animasi dino ngintip
+    var isPeeking by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf<String?>(null) } // State for Custom Dialog
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.Colors.CreamBackground),
-        contentPadding = PaddingValues(bottom = 100.dp) // Jarak ekstra untuk BottomNavBar, sama dgn HomeScreen
-    ) {
-        item {
-            HeaderBanner(
-                modifier = Modifier.padding(horizontal = DesignTokens.Dimensions.PaddingLarge)
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-        }
+    LaunchedEffect(Unit) {
+        delay(800) // Jeda awal sebelum dino ngintip
+        isPeeking = true
+    }
 
-        if (uiState.isLoading) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(DesignTokens.Colors.CreamBackground),
+            contentPadding = PaddingValues(bottom = 100.dp) // Jarak ekstra untuk BottomNavBar, sama dgn HomeScreen
+        ) {
             item {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFFA87042))
-                }
-            }
-        } else if (uiState.error != null) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    Text(text = "Error: ${uiState.error}", color = Color.Red)
-                }
-            }
-        } else {
-            items(uiState.chapters) { chapter ->
-                ChapterSection(
-                    chapterTitle = chapter.title,
-                    episodes = chapter.episodes,
-                    onEpisodeClick = { episode -> onNavigateToEpisode(episode.id) }
+                HeaderBanner(
+                    modifier = Modifier.padding(horizontal = DesignTokens.Dimensions.PaddingLarge)
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+
+            if (uiState.isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFFA87042))
+                    }
+                }
+            } else if (uiState.error != null) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        Text(text = "Error: ${uiState.error}", color = Color.Red)
+                    }
+                }
+            } else {
+                items(uiState.chapters) { chapter ->
+                    ChapterSection(
+                        chapterTitle = chapter.title,
+                        episodes = chapter.episodes,
+                        onEpisodeClick = { episode -> onNavigateToEpisode(episode.id) },
+                        onLockedEpisodeClick = { episode ->
+                            if (episode.contentImageUrl == null) {
+                                dialogMessage = "EPISODE INI BELUM TERSEDIA"
+                            } else {
+                                dialogMessage = "BACA EPISODE SEBELUMNYA UNTUK MEMBUKA"
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
+        
+        // Dino Ngintip (Peeking Mascot)
+        AnimatedVisibility(
+            visible = isPeeking,
+            enter = slideInHorizontally(
+                initialOffsetX = { fullWidth -> fullWidth }, // Slide masuk penuh dari ujung luar kanan (+X)
+                animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+            ),
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.img_dino_hi),
+                contentDescription = "Peeking Dino",
+                modifier = Modifier
+                    .width(95.dp) // Ukuran diperkecil agar lebih proporsional dan tidak menutupi konten
+                    .padding(end = 0.dp), // Mepet garis layar
+                contentScale = ContentScale.Fit
+            )
+        }
+        
+        // Custom Dialog Pop-up
+        if (dialogMessage != null) {
+            androidx.compose.ui.window.Dialog(onDismissRequest = { dialogMessage = null }) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFFEFDF1), // Latar krem
+                    modifier = Modifier.padding(horizontal = 16.dp).wrapContentHeight()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp).fillMaxWidth()
+                    ) {
+                        Text(
+                            text = dialogMessage ?: "",
+                            color = Color(0xFFECA05A), // Teks oranye
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = { dialogMessage = null },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFECA05A)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(width = 120.dp, height = 48.dp)
+                        ) {
+                            Text("OK", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                        }
+                    }
+                }
             }
         }
     }
@@ -148,7 +218,7 @@ fun HeaderBanner(modifier: Modifier = Modifier) {
         
         // Mascot Image Overlapping
         Image(
-            painter = painterResource(id = R.drawable.supergobi_journey),
+            painter = painterResource(id = R.drawable.img_supergobi_journey),
             contentDescription = "Mascot",
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -163,7 +233,8 @@ fun HeaderBanner(modifier: Modifier = Modifier) {
 fun ChapterSection(
     chapterTitle: String,
     episodes: List<UiEpisode>,
-    onEpisodeClick: (UiEpisode) -> Unit
+    onEpisodeClick: (UiEpisode) -> Unit,
+    onLockedEpisodeClick: (UiEpisode) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -179,19 +250,26 @@ fun ChapterSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(episodes) { episode ->
-                EpisodeCard(episode = episode, onClick = { onEpisodeClick(episode) })
+                EpisodeCard(
+                    episode = episode,
+                    onClick = { onEpisodeClick(episode) },
+                    onLockedClick = { onLockedEpisodeClick(episode) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun EpisodeCard(episode: UiEpisode, onClick: () -> Unit) {
+fun EpisodeCard(episode: UiEpisode, onClick: () -> Unit, onLockedClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .width(140.dp)
             .height(200.dp)
-            .clickable { if (!episode.isLocked) onClick() },
+            .clickable { 
+                if (!episode.isLocked) onClick() 
+                else onLockedClick()
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),

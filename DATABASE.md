@@ -1,4 +1,4 @@
-# 🗄️ Database Documentation — BinGoo (Raion)
+# 🗄️ Database Documentation — BinGo (Raion)
 
 > **Platform:** Supabase (PostgreSQL)  
 > **RLS:** Disabled (semua tabel)  

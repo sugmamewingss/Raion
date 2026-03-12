@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.profile
+﻿package com.example.raion.ui.features.profile
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -94,7 +94,11 @@ fun ProfileAvatarSection(coinBalance: Int, avatarUrl: String, onWardrobeClick: (
             contentAlignment = Alignment.Center
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("🪙", fontSize = 12.sp) // Custom icon coin
+                Image(
+                    painter = painterResource(id = R.drawable.ic_gold),
+                    contentDescription = "Coin",
+                    modifier = Modifier.size(14.dp)
+                ) // Custom icon coin
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = formatCompactNumber(coinBalance),
@@ -106,7 +110,7 @@ fun ProfileAvatarSection(coinBalance: Int, avatarUrl: String, onWardrobeClick: (
         }
 
         // Mascot Output (Center Bottom)
-        val imageToLoad = if (avatarUrl.isNotEmpty()) avatarUrl else "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+        val imageToLoad: Any = if (avatarUrl.isNotEmpty()) avatarUrl else R.drawable.img_dino_default
         
         SubcomposeAsyncImage(
             model = imageToLoad,
@@ -127,7 +131,7 @@ fun ProfileAvatarSection(coinBalance: Int, avatarUrl: String, onWardrobeClick: (
             },
             error = {
                 Image(
-                    painter = painterResource(id = R.drawable.dinoprofile),
+                    painter = painterResource(id = R.drawable.img_dino_default),
                     contentDescription = "Hero Avatar Fallback",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
@@ -302,10 +306,13 @@ fun EditProfileButton(onClick: () -> Unit) {
 fun StreakRetentionCard(
     streak: Int, 
     isMissionCompletedToday: Boolean,
-    onTaskClick: () -> Unit
+    onTaskClick: () -> Unit,
+    onStreakClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onStreakClick),
         shape = RoundedCornerShape(20.dp),
         color = Color(0xFFFFEEDB), // Super light soft orange
         border = BorderStroke(2.dp, Color(0xFFFFCC99)) // Soft orange border
@@ -358,7 +365,7 @@ fun StreakRetentionCard(
                         color = DesignTokens.Colors.OrangePrimary
                     )
                     Image(
-                        painter = painterResource(id = R.drawable.fire_streak),
+                        painter = painterResource(id = R.drawable.ic_fire_streak),
                         contentDescription = "Fire Streak",
                         modifier = Modifier.size(44.dp),
                         contentScale = ContentScale.Fit,
@@ -407,7 +414,7 @@ fun StreakRetentionCard(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Image(
-                            painter = painterResource(id = R.drawable.fire_streak),
+                            painter = painterResource(id = R.drawable.ic_fire_streak),
                             contentDescription = "Fire",
                             modifier = Modifier.size(16.dp),
                             colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(dayColor)
@@ -450,7 +457,7 @@ fun MonthlyBadgesSection(onSeeAllClick: () -> Unit) {
         ) {
             // Three badges
             Image(
-                painter = painterResource(id = R.drawable.badge_1),
+                painter = painterResource(id = R.drawable.ic_badge_1),
                 contentDescription = "Badge 1",
                 modifier = Modifier
                     .size(80.dp)
@@ -459,7 +466,7 @@ fun MonthlyBadgesSection(onSeeAllClick: () -> Unit) {
                     .border(2.dp, Color(0xFFFFCCCC), CircleShape)
             )
             Image(
-                painter = painterResource(id = R.drawable.badge_2),
+                painter = painterResource(id = R.drawable.ic_badge_2),
                 contentDescription = "Badge 2",
                 modifier = Modifier
                     .size(80.dp)
@@ -468,7 +475,7 @@ fun MonthlyBadgesSection(onSeeAllClick: () -> Unit) {
                     .border(2.dp, Color(0xFFB3E6D5), CircleShape)
             )
             Image(
-                painter = painterResource(id = R.drawable.badge_3),
+                painter = painterResource(id = R.drawable.ic_badge_3),
                 contentDescription = "Badge 3",
                 modifier = Modifier
                     .size(80.dp)

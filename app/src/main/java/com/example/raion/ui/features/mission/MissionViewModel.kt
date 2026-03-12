@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.raion.data.model.MissionStep
 import com.example.raion.data.model.MissionUiState
+import com.example.raion.data.repository.AuthRepository
 import com.example.raion.data.repository.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -18,6 +19,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MissionViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
     private val homeRepository: HomeRepository
 ) : ViewModel() {
 
@@ -33,10 +35,12 @@ class MissionViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             val profileDeferred = async { homeRepository.getUserProfile() }
+            val rankDeferred = async { authRepository.getUserRank() }
             val missionDeferred = async { homeRepository.getActiveMissions() }
             val categoriesDeferred = async { homeRepository.getWasteCategories() }
 
             val profileResult = profileDeferred.await()
+            val rankResult = rankDeferred.await()
             val missionResult = missionDeferred.await()
             val categoriesResult = categoriesDeferred.await()
 
@@ -60,6 +64,8 @@ class MissionViewModel @Inject constructor(
                     userLevel = profile?.level ?: 1,
                     userXp = profile?.totalXp ?: 0,
                     userCoins = profile?.coins ?: 0,
+                    userRank = rankResult.getOrNull() ?: 5,
+                    avatarUrl = profile?.currentAvatarUrl ?: "",
                     scannedCount = if (missionComplete) target else (activeMission?.currentProgress ?: 0),
                     targetCount = target,
                     isMissionComplete = missionComplete,

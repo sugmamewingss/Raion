@@ -28,7 +28,7 @@ data class MissionUiState(
     // Wizard selections (reset per entry)
     val selectedType: String? = null,         // "organik" / "daur_ulang"
     val selectedSubtype: String? = null,      // "buah", "sayur", "kaleng", etc
-    val selectedLocation: String? = null,     // "kantin", "ruang_kelas", etc
+    val selectedLocation: String? = null,
     val selectedQuantity: Int = 1,
 
     // Result from last RPC call
@@ -45,6 +45,8 @@ data class MissionUiState(
     val userLevel: Int = 1,
     val userXp: Int = 0,
     val userCoins: Int = 0,
+    val userRank: Int = 5,
+    val avatarUrl: String = "",
 
     val errorMessage: String? = null
 )

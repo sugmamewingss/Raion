@@ -30,6 +30,7 @@ data class HomeUiState(
     val currentAvatarUrl: String = "", 
     val userLevel: Int = 1,
     val totalCoins: Int = 0,
+    val lifetimeCoins: Int = 0,
     val totalXp: Int = 0,
     val xpForCurrentLevel: Int = 0,
     val xpForNextLevel: Int = 100,
@@ -90,6 +91,7 @@ class HomeViewModel @Inject constructor(
 
             val newTotalXp = state.totalXp + bonusXp
             val newCoins = state.totalCoins + bonusCoins
+            val newLifetimeCoins = state.lifetimeCoins + bonusCoins
             // Recalculate level locally (same formula as DB: level = total_xp / 100 + 1)
             val newLevel = (newTotalXp / 100) + 1
 
@@ -106,6 +108,7 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 totalXp = newTotalXp,
                 totalCoins = newCoins,
+                lifetimeCoins = newLifetimeCoins,
                 userLevel = newLevel,
                 xpForCurrentLevel = (newLevel - 1) * 100,
                 xpForNextLevel = newLevel * 100,
@@ -124,6 +127,7 @@ class HomeViewModel @Inject constructor(
                     state.copy(
                         totalXp = profile.totalXp,
                         totalCoins = profile.coins,
+                        lifetimeCoins = profile.lifetimeCoins,
                         userLevel = profile.level,
                         xpForCurrentLevel = (profile.level - 1) * 100,
                         xpForNextLevel = profile.level * 100,
@@ -192,6 +196,7 @@ class HomeViewModel @Inject constructor(
                         currentAvatarUrl = if (profile.currentAvatarUrl.isNullOrEmpty()) "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png" else profile.currentAvatarUrl,
                         userLevel = profile.level,
                         totalCoins = profile.coins,
+                        lifetimeCoins = profile.lifetimeCoins,
                         totalXp = profile.totalXp,
                         xpForCurrentLevel = (profile.level - 1) * 100,
                         xpForNextLevel = profile.level * 100,
