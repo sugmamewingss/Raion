@@ -64,6 +64,8 @@ data class QuizPrepUiState(
     val chapter: QuizChapter? = null,
     val episode: QuizEpisode? = null,
     val questionsCount: Int = 0,
+    val accumulativeXp: Int = 0,
+    val accumulativeCoins: Int = 0,
     val errorMessage: String? = null
 )
 
@@ -109,12 +111,20 @@ class QuizPrepViewModel @Inject constructor(
             val questionsCount = questionsResult.getOrNull()?.size ?: 0
 
             if (matchedEpisode != null && matchedChapter != null) {
+                // Fetch all episodes for matchedChapter to calculate accumulator
+                val epRes = homeRepository.getQuizEpisodes(matchedChapter.id)
+                val allEps = epRes.getOrNull() ?: emptyList()
+                val totalXp = allEps.sumOf { it.rewardXp }
+                val totalCoins = allEps.sumOf { it.rewardCoins }
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         chapter = matchedChapter,
                         episode = matchedEpisode,
-                        questionsCount = questionsCount
+                        questionsCount = questionsCount,
+                        accumulativeXp = totalXp,
+                        accumulativeCoins = totalCoins
                     )
                 }
             } else {
@@ -278,11 +288,18 @@ class QuizQuestionViewModel @Inject constructor(
     }
 }
 
+data class QuizChapterUiModel(
+    val chapter: QuizChapter,
+    val totalEpisodes: Int,
+    val accumulativeXp: Int,
+    val accumulativeCoins: Int
+)
+
 data class QuizUiState(
     val isLoading: Boolean = true,
     val userProfile: UserProfile? = null,
     val userRank: Int = 0,
-    val chapters: List<QuizChapter> = emptyList(),
+    val chapters: List<QuizChapterUiModel> = emptyList(),
     val chapterProgress: List<UserChapterProgress> = emptyList(),
     val currentTargetProgress: Int = 0,
     val currentTargetMax: Int = 10,
@@ -323,13 +340,31 @@ class QuizViewModel @Inject constructor(
                 val leaderboard = leaderboardResult.getOrDefault(emptyList())
                 val rank = leaderboard.indexOfFirst { it.id == profile?.id } + 1
                 
-                val chapters = chaptersResult.getOrDefault(emptyList())
+                val baseChapters = chaptersResult.getOrDefault(emptyList())
                 val progress = chaptersProgressResult?.getOrDefault(emptyList()) ?: emptyList()
 
+                // Fetch episodes per chapter to accumulate rewards
+                val chaptersWithRewards = mutableListOf<QuizChapterUiModel>()
+                for (ch in baseChapters) {
+                    val epsResult = homeRepository.getQuizEpisodes(ch.id)
+                    val epsList = epsResult.getOrNull() ?: emptyList()
+                    val totalXp = epsList.sumOf { it.rewardXp }
+                    val totalCoins = epsList.sumOf { it.rewardCoins }
+                    
+                    chaptersWithRewards.add(
+                        QuizChapterUiModel(
+                            chapter = ch,
+                            totalEpisodes = epsList.size,
+                            accumulativeXp = totalXp,
+                            accumulativeCoins = totalCoins
+                        )
+                    )
+                }
+
                 // Opsi C: Dynamic Target Calculation based on Active Chapter
-                var activeChapter: QuizChapter? = chapters.sortedBy { it.chapterNumber }.firstOrNull()
-                for (chapter in chapters.sortedBy { it.chapterNumber }) {
-                    val prevChapter = chapters.find { it.chapterNumber == chapter.chapterNumber - 1 }
+                var activeChapter: QuizChapter? = baseChapters.sortedBy { it.chapterNumber }.firstOrNull()
+                for (chapter in baseChapters.sortedBy { it.chapterNumber }) {
+                    val prevChapter = baseChapters.find { it.chapterNumber == chapter.chapterNumber - 1 }
                     val isPrevCompleted = if (prevChapter == null) true else progress.find { it.chapterId == prevChapter.id }?.isCompleted == true
                     val isThisCompleted = progress.find { it.chapterId == chapter.id }?.isCompleted == true
                     
@@ -339,8 +374,8 @@ class QuizViewModel @Inject constructor(
                     }
                 }
                 
-                if (activeChapter == null && chapters.isNotEmpty()) {
-                     activeChapter = chapters.last() // Or keep it at the latest unlocked
+                if (activeChapter == null && baseChapters.isNotEmpty()) {
+                     activeChapter = baseChapters.last() // Or keep it at the latest unlocked
                 }
 
                 var currentProgress = 0
@@ -369,7 +404,7 @@ class QuizViewModel @Inject constructor(
                         isLoading = false,
                         userProfile = profile,
                         userRank = if (rank > 0) rank else 0,
-                        chapters = chapters,
+                        chapters = chaptersWithRewards,
                         chapterProgress = progress,
                         currentTargetProgress = currentProgress,
                         currentTargetMax = currentMax

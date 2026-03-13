@@ -38,7 +38,7 @@ fun StoryDetailScreen(
     onFinish: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var commentText by remember { mutableStateOf("") }
+
     var isSubmitting by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     
@@ -158,8 +158,7 @@ fun StoryDetailScreen(
                             }
                         }
                     },
-                    commentText = commentText,
-                    onCommentChanged = { commentText = it }
+
                 )
             }
         }
@@ -255,9 +254,7 @@ fun BottomActionsArea(
     isSubmitting: Boolean,
     onNextLevel: () -> Unit,
     onPreviousLevel: () -> Unit,
-    onFinish: () -> Unit,
-    commentText: String,
-    onCommentChanged: (String) -> Unit
+    onFinish: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -329,41 +326,6 @@ fun BottomActionsArea(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Label Komentar
-        Text(
-            text = "Komentar",
-            color = Color.Black,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 20.sp
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Input Komentar dengan Underline custom
-        TextField(
-            value = commentText,
-            onValueChange = onCommentChanged,
-            placeholder = { 
-                Text(
-                    text = "Tulisan Komentar", 
-                    color = Color.Gray.copy(alpha = 0.8f)
-                ) 
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Gray,
-                unfocusedIndicatorColor = Color.LightGray,
-                cursorColor = Color(0xFF1C533F)
-            ),
-            singleLine = true
-        )
     }
 }
 

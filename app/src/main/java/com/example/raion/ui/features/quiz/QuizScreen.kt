@@ -329,7 +329,7 @@ fun TargetProgressCard(progress: Int, maxTarget: Int) {
 
 @Composable
 fun ChallengeListContainer(
-    chapters: List<com.example.raion.data.model.quiz.QuizChapter>,
+    chapters: List<com.example.raion.ui.features.quiz.QuizChapterUiModel>,
     chapterProgress: List<com.example.raion.data.model.quiz.UserChapterProgress>,
     onNavigateToEpisodes: (String) -> Unit = {}
 ) {
@@ -356,14 +356,16 @@ fun ChallengeListContainer(
             if (chapters.isEmpty()) {
                 Text("Belum ada babak kuis.", color = Color.Gray, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
             } else {
-                chapters.forEachIndexed { index, chapter ->
+                chapters.forEachIndexed { index, chapterModel ->
+                    val chapter = chapterModel.chapter
+                    
                     // A chapter is unlocked if it's the first chapter (number 1)
                     // OR if the PREVIOUS chapter is completed.
                     val isUnlocked = if (chapter.chapterNumber == 1) {
                         true
                     } else {
                         // Find the previous chapter
-                        val prevChapter = chapters.find { it.chapterNumber == chapter.chapterNumber - 1 }
+                        val prevChapter = chapters.find { it.chapter.chapterNumber == chapter.chapterNumber - 1 }?.chapter
                         // Check if previous chapter is in progress list and isCompleted == true
                         val prevProgress = chapterProgress.find { it.chapterId == prevChapter?.id }
                         prevProgress?.isCompleted == true
@@ -377,9 +379,9 @@ fun ChallengeListContainer(
                     ChallengeCard(
                         title = "Bab ${chapter.chapterNumber}",
                         subtitle = chapter.title,
-                        episodes = 0, // In a real app we would join or query episodes count
-                        bonusXp = chapter.bonusXp,
-                        bonusCoins = chapter.bonusCoins,
+                        episodes = chapterModel.totalEpisodes,
+                        accumulativeXp = chapterModel.accumulativeXp,
+                        accumulativeCoins = chapterModel.accumulativeCoins,
                         bgColor = bgColor,
                         borderColor = borderColor,
                         isLocked = !isUnlocked,
@@ -409,8 +411,8 @@ fun ChallengeCard(
     title: String,
     subtitle: String,
     episodes: Int,
-    bonusXp: Int = 50,
-    bonusCoins: Int = 15,
+    accumulativeXp: Int = 0,
+    accumulativeCoins: Int = 0,
     bgColor: Color,
     borderColor: Color,
     isLocked: Boolean,
@@ -459,9 +461,9 @@ fun ChallengeCard(
 
                 // Badges Row
                 Row {
-                    Badge(text = "+$bonusXp XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
+                    Badge(text = "+$accumulativeXp XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Badge(text = "+$bonusCoins", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
+                    Badge(text = "+$accumulativeCoins", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
                 }
             }
 

@@ -137,13 +137,14 @@ fun QuizExplanationScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    itemsIndexed(uiState.questions) { index, q ->
+                    val filteredQuestions = uiState.questions.filter { it.explanation != null }
+                    itemsIndexed(filteredQuestions) { index, q ->
                         val correctAnswer = q.options.getOrNull(q.correctAnswerIndex) ?: ""
                         val item = ExplanationItem(
                             id = index + 1,
                             question = q.questionText,
                             answer = correctAnswer,
-                            explanation = q.explanation ?: "Tidak ada pembahasan detail."
+                            explanation = q.explanation ?: ""
                         )
                         ExplanationCard(item = item, darkGreenColor = darkGreenColor, lightGreenColor = lightGreenColor)
                     }

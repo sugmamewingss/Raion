@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -461,80 +463,116 @@ fun MissionTruckSection(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Truck Image
-                Image(
-                    painter = painterResource(id = R.drawable.img_truck),
-                    contentDescription = "Garbage Truck",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .padding(bottom = 16.dp),
-                    contentScale = ContentScale.Fit
-                )
-                
-                // Info Text
-                val inlineId = "truck_icon"
-                val annotatedText = androidx.compose.ui.text.buildAnnotatedString {
-                    append("Tahukah kamu? Setelah kita membuang sampah dengan benar, truk sampah akan mengumpulkannya untuk dibawa ke tempat pengolahan!  ")
-                    appendInlineContent(inlineId, "[truck]")
-                }
-                
-                val inlineContent = mapOf(
-                    Pair(
-                        inlineId,
-                        androidx.compose.foundation.text.InlineTextContent(
-                            androidx.compose.ui.text.Placeholder(
-                                width = 16.sp,
-                                height = 16.sp,
-                                placeholderVerticalAlign = androidx.compose.ui.text.PlaceholderVerticalAlign.TextCenter
-                            )
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.img_truck),
-                                contentDescription = "Truck Icon",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
+                // === Fun Fact Carousel ===
+                val funFacts = listOf(
+                    Triple(
+                        R.drawable.img_truck,
+                        "Tahukah kamu? Setelah kita membuang sampah dengan benar, truk sampah akan mengumpulkannya untuk dibawa ke tempat pengolahan! \uD83D\uDE9B\u267B\uFE0F",
+                        Color(0xFF2E7D32)
+                    ),
+                    Triple(
+                        R.drawable.img_truck_blue,
+                        "Fun Fact! Sampah yang sudah dikumpulkan oleh truk akan dibawa ke tempat khusus untuk dipilah dan diolah! \uD83C\uDF0D\u267B\uFE0F",
+                        Color(0xFF1565C0)
+                    ),
+                    Triple(
+                        R.drawable.img_recycle,
+                        "Pernahkah kamu membayangkan? Sampah ternyata bisa didaur ulang menjadi barang baru yang berguna! \u267B\uFE0F",
+                        Color(0xFF388E3C)
                     )
                 )
+                val pagerState = rememberPagerState(pageCount = { funFacts.size })
 
-                Text(
-                    text = annotatedText,
-                    inlineContent = inlineContent,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 16.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Selesai Button with Shadow Neo-Brutalism
-                Box(
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(52.dp)
-                        .background(Color(0xFF2C4331), RoundedCornerShape(8.dp))
-                        .padding(bottom = 4.dp)
-                ) {
-                    Box(
+                        .fillMaxWidth()
+                        .height(220.dp)
+                ) { page ->
+                    val (imageRes, text, _) = funFacts[page]
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(DesignTokens.Colors.TealPrimary, RoundedCornerShape(8.dp))
-                            .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(8.dp))
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onFinishClick() },
-                        contentAlignment = Alignment.Center
+                            .padding(horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            "Selesai!",
-                            color = Color.White,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 16.sp
+                        Image(
+                            painter = painterResource(id = imageRes),
+                            contentDescription = "Fun Fact Illustration",
+                            modifier = Modifier
+                                .height(120.dp)
+                                .fillMaxWidth(0.6f),
+                            contentScale = ContentScale.Fit
                         )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = text,
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Justify,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Button Selesai (kiri) + Dot Indicator (kanan) sejajar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Selesai Button with Shadow Neo-Brutalism
+                    Box(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(44.dp)
+                            .background(Color(0xFF2C4331), RoundedCornerShape(8.dp))
+                            .padding(bottom = 3.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(DesignTokens.Colors.TealPrimary, RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFF2C4331), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onFinishClick() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Selesai!",
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+                    // Dot Indicator
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        funFacts.forEachIndexed { index, _ ->
+                            val isSelected = pagerState.currentPage == index
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .then(
+                                        if (isSelected) Modifier
+                                            .width(24.dp)
+                                            .height(8.dp)
+                                            .background(DesignTokens.Colors.OrangePrimary, RoundedCornerShape(4.dp))
+                                        else Modifier
+                                            .size(8.dp)
+                                            .background(Color.LightGray, CircleShape)
+                                    )
+                            )
+                        }
                     }
                 }
             }

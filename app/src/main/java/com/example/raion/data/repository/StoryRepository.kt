@@ -90,8 +90,8 @@ class StoryRepository @Inject constructor(
             val params = StoryRpcParams(
                 userId = userId,
                 episodeId = episodeId,
-                earnedXp = 100,
-                earnedCoins = 30,
+                earnedXp = 35,
+                earnedCoins = 10,
                 dateStr = java.time.LocalDate.now().toString()
             )
             // Call RPC to log the history for Diary and get Rewards

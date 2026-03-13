@@ -68,6 +68,8 @@ fun QuizPrepScreen(
                         chapter = uiState.chapter,
                         episode = uiState.episode,
                         questionsCount = uiState.questionsCount,
+                        accumulativeXp = uiState.accumulativeXp,
+                        accumulativeCoins = uiState.accumulativeCoins,
                         onStartQuiz = onStartQuiz
                     )
                 }
@@ -81,6 +83,8 @@ fun PrepDetailsContainer(
     chapter: com.example.raion.data.model.quiz.QuizChapter?,
     episode: com.example.raion.data.model.quiz.QuizEpisode?,
     questionsCount: Int,
+    accumulativeXp: Int,
+    accumulativeCoins: Int,
     onStartQuiz: () -> Unit
 ) {
     val cardColor = Color(0xFF1D5C42) // Dark green from design
@@ -117,9 +121,9 @@ fun PrepDetailsContainer(
                             iconRes = R.drawable.ic_book,
                             badges = {
                                 Row(modifier = Modifier.fillMaxWidth()) {
-                                    Badge(text = "+${chapter.bonusXp} XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
+                                    Badge(text = "+$accumulativeXp XP", bgColor = Color(0xFFD9F1FF), textColor = Color(0xFF2C84C7))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Badge(text = "+${chapter.bonusCoins}", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
+                                    Badge(text = "+$accumulativeCoins", bgColor = Color(0xFFFFECB3), textColor = Color(0xFFD69400), isCoin = true)
                                 }
                             }
                         )

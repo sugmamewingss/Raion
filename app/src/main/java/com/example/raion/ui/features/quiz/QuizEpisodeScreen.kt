@@ -59,10 +59,16 @@ fun QuizEpisodeScreen(
                         .padding(horizontal = 20.dp, vertical = 24.dp)
                 ) {
                     uiState.chapter?.let { chapter ->
+                        // Calculate accumulative rewards
+                        val accumulativeXp = uiState.episodes.sumOf { it.rewardXp }
+                        val accumulativeCoins = uiState.episodes.sumOf { it.rewardCoins }
+
                         // Selected Chapter Header Box
                         SelectedChapterCard(
                             chapter = chapter,
                             episodesCount = uiState.episodes.size,
+                            accumulativeXp = accumulativeXp,
+                            accumulativeCoins = accumulativeCoins,
                             onChangeBabClick = onChangeBabClick
                         )
                     }
@@ -85,6 +91,8 @@ fun QuizEpisodeScreen(
 fun SelectedChapterCard(
     chapter: com.example.raion.data.model.quiz.QuizChapter,
     episodesCount: Int,
+    accumulativeXp: Int,
+    accumulativeCoins: Int,
     onChangeBabClick: () -> Unit
 ) {
     val cardColor = Color(0xFF1D5C42) // Dark green from design
@@ -115,8 +123,8 @@ fun SelectedChapterCard(
                     title = "Bab ${chapter.chapterNumber}",
                     subtitle = chapter.title,
                     iconRes = R.drawable.ic_book,
-                    bonusXp = chapter.bonusXp,
-                    bonusCoins = chapter.bonusCoins,
+                    bonusXp = accumulativeXp,
+                    bonusCoins = accumulativeCoins,
                     bgColor = Color.White,
                     borderColor = Color.Transparent,
                     isLocked = false,

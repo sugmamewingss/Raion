@@ -559,7 +559,7 @@ class HomeRepository @Inject constructor(
             
             val params = RpcParams(userId, episodeId, correctAnswersCount, java.time.LocalDate.now().toString())
             
-            val response = supabase.postgrest.rpc("submit_quiz_result", params)
+            val response = supabase.postgrest.rpc("submit_quiz_result_v2", params)
             val result = response.decodeAs<QuizResultResponse>()
             
             Result.success(result)

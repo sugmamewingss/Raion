@@ -200,19 +200,12 @@ fun QuizCompleteScreen(
                                         color = Color(0xFFB8860B), // Dark Gold text
                                     )
                                     // Coin Icon representation
-                                    Box(
-                                        modifier = Modifier
-                                            .size(18.dp)
-                                            .background(Color(0xFFE7C160), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "III",
-                                            fontSize = 8.sp,
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_gold),
+                                        contentDescription = "Coin",
+                                        modifier = Modifier.size(18.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
                                 }
                             }
 

@@ -9,8 +9,6 @@ data class QuizChapter(
     @SerialName("chapter_number") val chapterNumber: Int,
     val title: String,
     val description: String?,
-    @SerialName("bonus_xp") val bonusXp: Int,
-    @SerialName("bonus_coins") val bonusCoins: Int,
     @SerialName("is_active") val isActive: Boolean
 )
 
