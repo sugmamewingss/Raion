@@ -77,7 +77,28 @@ data class LeaderboardUser(
 @Serializable
 data class PointShopItem(
     @SerialName("item_id") val itemId: String,
+    @SerialName("category_id") val categoryId: String? = null,
     val name: String,
     @SerialName("image_url") val imageUrl: String,
-    val price: Int
+    @SerialName("avatar_url") val avatarUrl: String = "",
+    val price: Int,
+    @SerialName("min_level") val minLevel: Int = 1,
+    @SerialName("is_active") val isActive: Boolean = true,
+    @SerialName("is_default") val isDefault: Boolean = false
+)
+
+@Serializable
+data class ShopCategory(
+    val id: String,
+    val name: String,
+    @SerialName("icon_url") val iconUrl: String,
+    @SerialName("sort_order") val sortOrder: Int = 0
+)
+
+@Serializable
+data class UserInventoryItem(
+    val id: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("item_id") val itemId: String,
+    @SerialName("purchased_at") val purchasedAt: String
 )

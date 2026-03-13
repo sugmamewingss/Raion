@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.home
+﻿package com.example.raion.ui.features.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -16,10 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
+import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +38,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontStyle
 import com.example.raion.R
 import com.example.raion.data.model.ActiveMission
@@ -56,6 +58,7 @@ fun TopProfileSection(
     progressRatio: Float,
     coins: Int,
     level: Int,
+    avatarUrl: String = "",
     isMissionCompletedToday: Boolean = false
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
@@ -68,15 +71,37 @@ fun TopProfileSection(
             // Kontainer Kiri: Avatar + Info (Teks & Streak)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Avatar
-                Image(
-                    painter = painterResource(id = R.drawable.dinoprofile),
-                    contentDescription = "Avatar",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, Color.LightGray, CircleShape),
-                    contentScale = ContentScale.Crop
-                )
+                Box(
+                    modifier = Modifier.size(65.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val imageToLoad = if (avatarUrl.isNotEmpty()) avatarUrl else "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+                    
+                    SubcomposeAsyncImage(
+                        model = imageToLoad,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .border(1.dp, Color.LightGray, CircleShape),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = DesignTokens.Colors.OrangePrimary,
+                                strokeWidth = 2.dp
+                            )
+                        },
+                        error = {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_dino_default),
+                                contentDescription = "Avatar default",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    )
+                }
                 Spacer(modifier = Modifier.width(12.dp))
 
                 // Info
@@ -111,7 +136,7 @@ fun TopProfileSection(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.fire_streak),
+                                    painter = painterResource(id = R.drawable.ic_fire_streak),
                                     contentDescription = "Streak",
                                     modifier = Modifier.height(14.dp),
                                     contentScale = ContentScale.Fit,
@@ -175,7 +200,11 @@ fun TopProfileSection(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.padding(horizontal = 10.dp)
                     ) {
-                        Text("🪙", fontSize = 12.sp)
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_gold),
+                            contentDescription = "Coin",
+                            modifier = Modifier.size(14.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             formatCompactNumber(coins),
@@ -343,7 +372,7 @@ fun ActiveMissionCard(mission: ActiveMission?, onStartMission: () -> Unit = {}) 
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.trashprogress), // Fallback, you can change this to trash bin icon later
+                                    painter = painterResource(id = R.drawable.ic_trash), // Fallback, you can change this to trash bin icon later
                                     contentDescription = "Trash",
                                     tint = DesignTokens.Colors.BrandSecondary,
                                     modifier = Modifier.size(14.dp)
@@ -361,7 +390,7 @@ fun ActiveMissionCard(mission: ActiveMission?, onStartMission: () -> Unit = {}) 
 
                             // Teks deskripsi italic (sesuai desain)
                             Text(
-                                text = "Buanglah sampah pada tempatnya ya! ✨",
+                                text = "Buanglah sampah pada tempatnya ya!",
                                 fontSize = 10.sp,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                 fontWeight = FontWeight.Bold,
@@ -370,10 +399,23 @@ fun ActiveMissionCard(mission: ActiveMission?, onStartMission: () -> Unit = {}) 
                         }
                     }
 
-                    // Gambar Karakter Gobi Boba (ditengah vertical, tidak overlap)
+                    // Gambar Karakter Gobi Boba / Tong Sampah Dinamis (ditengah vertical)
+                    val trashIconId = if (mission == null) {
+                        R.drawable.img_trash_bin_5 // Jika tidak ada misi (selesai semua), tong penuh
+                    } else {
+                        when (mission.currentProgress) {
+                            0 -> R.drawable.img_trash_bin_0
+                            1 -> R.drawable.img_trash_bin_1
+                            2 -> R.drawable.img_trash_bin_2
+                            3 -> R.drawable.img_trash_bin_3
+                            4 -> R.drawable.img_trash_bin_4
+                            else -> R.drawable.img_trash_bin_5
+                        }
+                    }
+
                     Image(
-                        painter = painterResource(id = R.drawable.trashprogress),
-                        contentDescription = "Mascot",
+                        painter = painterResource(id = trashIconId),
+                        contentDescription = "Mascot Trash Progress",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .width(80.dp)
@@ -451,21 +493,21 @@ fun QuickNavMenu(onItemClick: (Int) -> Unit = {}) {
     ) {
         QuickNavItem(
             label = "Detail Misi",
-            iconRes = R.drawable.magnifying_glass,
+            iconRes = R.drawable.ic_magnifying_glass,
             bgColor = Color(0xFFD7BFFD),        // Lilac pastel
             borderColor = Color(0xFFB89EDE),     // Darker lilac
             onClick = { onItemClick(0) }
         )
         QuickNavItem(
             label = "Buku Harian",
-            iconRes = R.drawable.daily_books,
+            iconRes = R.drawable.img_daily_books,
             bgColor = Color(0xFF8DD8C4),         // Teal soft
             borderColor = Color(0xFF6BBFAB),     // Darker teal
             onClick = { onItemClick(1) }
         )
         QuickNavItem(
             label = "Tantangan Jenius",
-            iconRes = R.drawable.genuine_task,
+            iconRes = R.drawable.ic_genuine_task,
             bgColor = Color(0xFFFFB3B6),         // Pink pastel
             borderColor = Color(0xFFE8969A),     // Darker pink
             onClick = { onItemClick(2) }
@@ -557,11 +599,30 @@ fun EducationalCarousel(articles: List<EduArticle>) {
                             .fillMaxWidth()
                             .height(130.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.sampah1),
-                            contentDescription = "Banner",
+                        val imageToLoad = if (!article.imageUrl.isNullOrEmpty()) article.imageUrl else "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+                        
+                        coil.compose.SubcomposeAsyncImage(
+                            model = imageToLoad,
+                            contentDescription = "Banner Edukasi",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
+                            loading = {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(30.dp),
+                                        color = DesignTokens.Colors.TealPrimary,
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            },
+                            error = {
+                                Image(
+                                    painter = painterResource(id = R.drawable.img_trash_1),
+                                    contentDescription = "Fallback Banner",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
                         )
                         // Tag badge
                         Box(
@@ -707,12 +768,6 @@ fun RankItemCard(user: UserProfile, rank: Int) {
         else -> "Pejuang Bumi"
     }
 
-    val avatarRes = when (rank) {
-        1 -> R.drawable.dinoprofile
-        2 -> R.drawable.dinoprofile2
-        else -> R.drawable.dinoprofile3
-    }
-
     val rankStr = when (rank) {
         1 -> "1st"
         2 -> "2nd"
@@ -764,14 +819,34 @@ fun RankItemCard(user: UserProfile, rank: Int) {
                         .fillMaxSize()
                         .background(Color(0xFFE8E8E8), CircleShape)
                 )
-                Image(
-                    painter = painterResource(id = avatarRes),
+                val fallbackUrl = "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+                val imageToLoad = if (!user.currentAvatarUrl.isNullOrEmpty()) user.currentAvatarUrl else fallbackUrl
+                
+                SubcomposeAsyncImage(
+                    model = imageToLoad,
                     contentDescription = "Rank $rank Avatar",
                     modifier = Modifier
                         .size(avatarSize - 6.dp)
                         .align(Alignment.Center)
                         .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = DesignTokens.Colors.OrangePrimary,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    },
+                    error = {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_dino_default),
+                            contentDescription = "Rank $rank Avatar Default",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 )
                 // Level badge — bottom-right, shield shape
                 Box(
@@ -961,11 +1036,22 @@ fun ShopItemCard(item: PointShopItem) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.dino_face), // Temp Image Mapper
+                coil.compose.SubcomposeAsyncImage(
+                    model = item.imageUrl,
                     contentDescription = item.name,
                     modifier = Modifier.size(80.dp),
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit,
+                    loading = {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = DesignTokens.Colors.TealPrimary, strokeWidth = 2.dp)
+                    },
+                    error = {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_dino_face),
+                            contentDescription = item.name,
+                            modifier = Modifier.size(80.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
                 )
                 // Love Icon top right
                 Box(
@@ -1004,10 +1090,14 @@ fun ShopItemCard(item: PointShopItem) {
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "🟡", fontSize = 10.sp)
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_gold),
+                            contentDescription = "Coin",
+                            modifier = Modifier.size(14.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "${item.price} Poin",
+                            text = com.example.raion.ui.util.formatCompactNumber(item.price),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

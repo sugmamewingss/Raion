@@ -1,7 +1,8 @@
-package com.example.raion.ui.features.story
+﻿package com.example.raion.ui.features.story
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,9 +38,13 @@ fun StoryDetailScreen(
     onFinish: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var commentText by remember { mutableStateOf("") }
+
     var isSubmitting by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    
+    // Popup State & Navigation Deferring
+    var rewardPopupData by remember { mutableStateOf<com.example.raion.data.model.StoryRewardResponse?>(null) }
+    var pendingNavigation by remember { mutableStateOf<(() -> Unit)?>(null) }
     
     // Find the current episode
     var currentEpisode: UiEpisode? = null
@@ -129,10 +134,13 @@ fun StoryDetailScreen(
                     onNextLevel = {
                         coroutineScope.launch {
                             isSubmitting = true
-                            val success = viewModel.markEpisodeCompleted(episode.id)
+                            val result = viewModel.markEpisodeCompleted(episode.id)
                             isSubmitting = false
-                            if (success) {
-                                nextEpisodeId?.let { onNextLevel(it) } 
+                            if (result != null && result.grantedXp > 0) {
+                                rewardPopupData = result
+                                pendingNavigation = { nextEpisodeId?.let { onNextLevel(it) } }
+                            } else {
+                                nextEpisodeId?.let { onNextLevel(it) }
                             }
                         }
                     },
@@ -140,15 +148,17 @@ fun StoryDetailScreen(
                     onFinish = {
                         coroutineScope.launch {
                             isSubmitting = true
-                            val success = viewModel.markEpisodeCompleted(episode.id)
+                            val result = viewModel.markEpisodeCompleted(episode.id)
                             isSubmitting = false
-                            if (success) {
+                            if (result != null && result.grantedXp > 0) {
+                                rewardPopupData = result
+                                pendingNavigation = { onFinish() }
+                            } else {
                                 onFinish()
                             }
                         }
                     },
-                    commentText = commentText,
-                    onCommentChanged = { commentText = it }
+
                 )
             }
         }
@@ -158,6 +168,19 @@ fun StoryDetailScreen(
             modifier = Modifier.align(Alignment.TopStart),
             onNavigateBack = onNavigateBack
         )
+        
+        // Popup Overlay Render
+        rewardPopupData?.let { reward ->
+            StoryCompletePopup(
+                xp = reward.grantedXp,
+                coins = reward.grantedCoins,
+                onDismiss = {
+                    rewardPopupData = null
+                    pendingNavigation?.invoke()
+                    pendingNavigation = null
+                }
+            )
+        }
     }
 }
 
@@ -231,9 +254,7 @@ fun BottomActionsArea(
     isSubmitting: Boolean,
     onNextLevel: () -> Unit,
     onPreviousLevel: () -> Unit,
-    onFinish: () -> Unit,
-    commentText: String,
-    onCommentChanged: (String) -> Unit
+    onFinish: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -305,54 +326,100 @@ fun BottomActionsArea(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Label Komentar
-        Text(
-            text = "Komentar",
-            color = Color.Black,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 20.sp
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Input Komentar dengan Underline custom
-        TextField(
-            value = commentText,
-            onValueChange = onCommentChanged,
-            placeholder = { 
-                Text(
-                    text = "Tulisan Komentar", 
-                    color = Color.Gray.copy(alpha = 0.8f)
-                ) 
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Gray,
-                unfocusedIndicatorColor = Color.LightGray,
-                cursorColor = Color(0xFF1C533F)
-            ),
-            singleLine = true
-        )
     }
 }
 
-/*
-@Preview(showBackground = true)
 @Composable
-fun StoryDetailScreenPreview() {
-    com.example.raion.ui.theme.RaionTheme {
-        StoryDetailScreen(
-            episodeId = "dummy",
-            onNavigateBack = {},
-            onNextLevel = {}
-        )
+fun StoryCompletePopup(
+    xp: Int,
+    coins: Int,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Bab Selesai!",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFFA87042)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Maskot
+                Image(
+                    painter = painterResource(id = R.drawable.img_dino_daily),
+                    contentDescription = "Gobi Congratulates",
+                    modifier = Modifier.size(140.dp),
+                    contentScale = ContentScale.Fit
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Hebat sekali! Kumpulan episode ini sudah tamat. Sebagai hadiah menamatkan satu babak cerita, ini untukmu!",
+                    fontSize = 14.sp,
+                    color = Color.DarkGray,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    lineHeight = 20.sp
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Badge XP
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFD9F1FF), RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFF8BB5ED), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Text("+$xp XP", color = Color(0xFF2C84C7), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // Badge Coins
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFFFECB3), RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFFDCA855), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("+$coins ", color = Color(0xFFD69400), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_gold),
+                                contentDescription = "Coins",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.Colors.TealPrimary),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text("Terima Kasih!", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                }
+            }
+        }
     }
 }
-*/
+

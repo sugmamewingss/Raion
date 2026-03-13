@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.home
+﻿package com.example.raion.ui.features.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -49,7 +49,10 @@ fun HomeScreen(
     onNavigateOut: () -> Unit,
     onStartMission: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit,
-    onNavigateToStoryDetail: (String) -> Unit = {}
+    onNavigateToStoryDetail: (String) -> Unit = {},
+    onNavigateToQuiz: () -> Unit = {},
+    onNavigateToDiary: () -> Unit = {},
+    onNavigateToMissionDetail: () -> Unit = {}
 ) {
     val isLoggedOut by viewModel.isLoggedOut.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -84,15 +87,39 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) { page ->
             when (page) {
-                0 -> HomeTabContent(uiState = uiState, onStartMission = onStartMission)
+                0 -> HomeTabContent(
+                    uiState = uiState, 
+                    onStartMission = onStartMission, 
+                    onNavigateToQuiz = onNavigateToQuiz,
+                    onNavigateToDiary = onNavigateToDiary,
+                    onNavigateToMissionDetail = onNavigateToMissionDetail
+                )
                 1 -> com.example.raion.ui.features.story.StoryScreen(
                     onNavigateToEpisode = onNavigateToStoryDetail
                 )
-                2 -> DummyPage("Halaman Poin/Dino Kacamata")
+                2 -> com.example.raion.ui.features.shop.ShopScreen(
+                    currentCoins = uiState.totalCoins,
+                    currentLevel = uiState.userLevel,
+                    currentAvatarUrl = uiState.currentAvatarUrl,
+                    categories = uiState.shopCategories,
+                    items = uiState.pointShopItems,
+                    inventory = uiState.userInventory,
+                    onPurchase = { viewModel.purchaseShopItem(it.itemId) },
+                    onEquip = { viewModel.equipShopItem(it.itemId) }
+                )
                 3 -> ProfileScreen(
                     uiState = uiState,
                     onLogoutClick = viewModel::logout,
-                    onEditProfileClick = onNavigateToEditProfile
+                    onEditProfileClick = onNavigateToEditProfile,
+                    onStartDailyMission = {
+                        // Navigate back to the Home tab (index 0) where the mission board is
+                        coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                    },
+                    onWardrobeClick = {
+                        // Navigate horizontally to the Shop tab (index 2)
+                        coroutineScope.launch { pagerState.animateScrollToPage(2) }
+                    },
+                    onStreakClick = onNavigateToDiary
                 )
             }
         }
@@ -100,7 +127,13 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeTabContent(uiState: HomeUiState, onStartMission: () -> Unit = {}) {
+fun HomeTabContent(
+    uiState: HomeUiState,
+    onStartMission: () -> Unit = {},
+    onNavigateToQuiz: () -> Unit = {},
+    onNavigateToDiary: () -> Unit = {},
+    onNavigateToMissionDetail: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -112,17 +145,22 @@ fun HomeTabContent(uiState: HomeUiState, onStartMission: () -> Unit = {}) {
             userName = uiState.userName,
             streak = uiState.streak,
             isActive = uiState.isActive,
-            isMissionCompletedToday = uiState.isMissionCompletedToday,
             progressText = uiState.levelProgressText,
             progressRatio = uiState.levelProgressRatio,
             coins = uiState.totalCoins,
-            level = uiState.userLevel
+            level = uiState.userLevel,
+            avatarUrl = uiState.currentAvatarUrl,
+            isMissionCompletedToday = uiState.isMissionCompletedToday
         )
         Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
         ActiveMissionCard(mission = uiState.activeMissions.firstOrNull(), onStartMission = onStartMission)
         
         Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
-        QuickNavMenu(onItemClick = {})
+        QuickNavMenu(onItemClick = { index ->
+            if (index == 0) onNavigateToMissionDetail()
+            if (index == 1) onNavigateToDiary()
+            if (index == 2) onNavigateToQuiz()
+        })
         
         Spacer(modifier = Modifier.height(DesignTokens.Dimensions.PaddingLarge))
         EducationalCarousel(articles = uiState.eduArticles)
@@ -143,10 +181,10 @@ fun CustomBottomNavBar(
     onItemSelected: (Int) -> Unit
 ) {
     val navItems = listOf(
-        Pair(R.drawable.navbar1, "Beranda"),
-        Pair(R.drawable.navbar2, "Cerita"),
-        Pair(R.drawable.navbar3, "Toko"),
-        Pair(R.drawable.navbar4, "Profil")
+        Pair(R.drawable.ic_nav_home, "Beranda"),
+        Pair(R.drawable.ic_nav_book, "Cerita"),
+        Pair(R.drawable.ic_nav_shop, "Toko"),
+        Pair(R.drawable.ic_nav_profile, "Profil")
     )
 
     Column {

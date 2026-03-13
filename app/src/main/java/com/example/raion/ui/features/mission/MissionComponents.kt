@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.mission
+﻿package com.example.raion.ui.features.mission
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -7,6 +7,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -67,7 +69,7 @@ private fun MissionHeader(progress: Float, onBack: () -> Unit) {
 @Composable
 private fun GobiImage(modifier: Modifier = Modifier) {
     Image(
-        painter = painterResource(id = R.drawable.dino_yeay),
+        painter = painterResource(id = R.drawable.img_dino_yay),
         contentDescription = "Gobi",
         modifier = modifier.size(200.dp),
         contentScale = ContentScale.Fit
@@ -124,7 +126,31 @@ fun JourneyContent(
             .verticalScroll(rememberScrollState())
     ) {
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 0. Top Navigation
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Kembali",
+                    tint = Color.Black
+                )
+            }
+            Text(
+                text = "Misi Gobi",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.Black,
+                modifier = Modifier.weight(1f).offset(x = (-24).dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Profile header card
         Row(
@@ -146,14 +172,20 @@ fun JourneyContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Avatar top section
-                    Image(
-                        painter = painterResource(id = R.drawable.dinoprofile),
+                    val fallbackUrl = "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+                    val imageToLoad = if (state.avatarUrl.isNotEmpty()) state.avatarUrl else fallbackUrl
+
+                    coil.compose.AsyncImage(
+                        model = imageToLoad,
                         contentDescription = "Avatar",
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .padding(8.dp),
-                        contentScale = ContentScale.Fit
+                            .padding(8.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(id = R.drawable.img_dino_default),
+                        error = painterResource(id = R.drawable.img_dino_default)
                     )
                     // Divider
                     HorizontalDivider(
@@ -214,7 +246,7 @@ fun JourneyContent(
                         color = Color.Transparent
                     ) {
                         Text(
-                            text = "Peringkat 5",
+                            text = "Peringkat ${state.userRank}",
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
@@ -245,7 +277,11 @@ fun JourneyContent(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("🪙", fontSize = 10.sp)
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_gold),
+                                contentDescription = "Coin",
+                                modifier = Modifier.size(12.dp)
+                            )
                             Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = formatCompactNumber(state.userCoins),
@@ -346,7 +382,7 @@ fun JourneyContent(
                         ) {
                             // Spark/kilat effect
                             Image(
-                                painter = painterResource(id = R.drawable.spark_left),
+                                painter = painterResource(id = R.drawable.img_spark_left),
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(28.dp)
@@ -399,7 +435,7 @@ fun JourneyContent(
 
             // Gobi superhero image — overlaps outside the card
             Image(
-                painter = painterResource(id = R.drawable.supergobi),
+                painter = painterResource(id = R.drawable.img_supergobi),
                 contentDescription = "Super Gobi",
                 modifier = Modifier
                     .size(240.dp)
@@ -470,7 +506,7 @@ fun IntroContent(
 
         // Dino cool (intro variant)
         Image(
-            painter = painterResource(id = R.drawable.dino_cool),
+            painter = painterResource(id = R.drawable.img_dino_cool),
             contentDescription = "Dino Cool",
             modifier = Modifier
                 .fillMaxWidth()
@@ -565,12 +601,12 @@ fun SelectTypeContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 TrashItemCard(
-                    imageRes = R.drawable.sampahorganik,
+                    imageRes = R.drawable.img_trash_organic,
                     title = "Sampah Organik",
                     onClick = { onSelect("organik") }
                 )
                 TrashItemCard(
-                    imageRes = R.drawable.sampahdaurulang,
+                    imageRes = R.drawable.img_trash_recycle,
                     title = "Sampah Daur Ulang",
                     onClick = { onSelect("daur_ulang") }
                 )
@@ -595,13 +631,13 @@ fun SelectSubtypeContent(
     val title = if (selectedType == "organik") "Sampah Organik" else "Sampah Daur Ulang"
 
     fun getSubtypeImage(subtype: String): Int = when (subtype) {
-        "buah" -> R.drawable.sampahbuah
-        "sayur" -> R.drawable.sampahsayur
-        "sisa_makanan" -> R.drawable.sampahorganik
-        "kaleng" -> R.drawable.sampahkaleng
-        "kertas" -> R.drawable.sampahkertas
-        "plastik" -> R.drawable.sampahplastik
-        else -> R.drawable.sampahlainnya
+        "buah" -> R.drawable.img_trash_fruit
+        "sayur" -> R.drawable.img_trash_vegetable
+        "sisa_makanan" -> R.drawable.img_trash_organic
+        "kaleng" -> R.drawable.img_trash_can
+        "kertas" -> R.drawable.img_trash_paper
+        "plastik" -> R.drawable.img_trash_plastic
+        else -> R.drawable.img_trash_other
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -636,13 +672,13 @@ fun SelectSubtypeContent(
                     }
                 } else {
                     if (selectedType == "organik") {
-                        TrashItemCard(R.drawable.sampahbuah, "Sampah Buah") { onSelect("buah") }
-                        TrashItemCard(R.drawable.sampahsayur, "Sampah Sayur") { onSelect("sayur") }
-                        TrashItemCard(R.drawable.sampahorganik, "Sisa Makanan") { onSelect("sisa_makanan") }
+                        TrashItemCard(R.drawable.img_trash_fruit, "Sampah Buah") { onSelect("buah") }
+                        TrashItemCard(R.drawable.img_trash_vegetable, "Sampah Sayur") { onSelect("sayur") }
+                        TrashItemCard(R.drawable.img_trash_organic, "Sisa Makanan") { onSelect("sisa_makanan") }
                     } else {
-                        TrashItemCard(R.drawable.sampahkaleng, "Kaleng") { onSelect("kaleng") }
-                        TrashItemCard(R.drawable.sampahkertas, "Kertas") { onSelect("kertas") }
-                        TrashItemCard(R.drawable.sampahplastik, "Plastik") { onSelect("plastik") }
+                        TrashItemCard(R.drawable.img_trash_can, "Kaleng") { onSelect("kaleng") }
+                        TrashItemCard(R.drawable.img_trash_paper, "Kertas") { onSelect("kertas") }
+                        TrashItemCard(R.drawable.img_trash_plastic, "Plastik") { onSelect("plastik") }
                     }
                 }
 
@@ -686,15 +722,15 @@ fun SelectLocationContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    PhotoLocationCard(R.drawable.kantin, "Kantin", Modifier.weight(1f)) { onSelect("kantin") }
-                    PhotoLocationCard(R.drawable.ruangkelas, "Ruang Kelas", Modifier.weight(1f)) { onSelect("ruang_kelas") }
+                    PhotoLocationCard(R.drawable.img_school, "Sekolah", Modifier.weight(1f)) { onSelect("sekolah") }
+                    PhotoLocationCard(R.drawable.img_house, "Rumah", Modifier.weight(1f)) { onSelect("rumah") }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    PhotoLocationCard(R.drawable.halaman, "Halaman", Modifier.weight(1f)) { onSelect("halaman") }
-                    PhotoLocationCard(R.drawable.toilet, "Toilet", Modifier.weight(1f)) { onSelect("toilet") }
+                    PhotoLocationCard(R.drawable.img_public_place, "Tempat Umum", Modifier.weight(1f)) { onSelect("tempat_umum") }
+                    PhotoLocationCard(R.drawable.img_park, "Taman", Modifier.weight(1f)) { onSelect("taman") }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -782,14 +818,10 @@ fun SelectQuantityContent(
                         color = DesignTokens.Colors.TealPrimary
                     )
                 } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        QuantityCard("1 Buah", Modifier.weight(1f)) { onSelect(1) }
-                        QuantityCard("2 Buah", Modifier.weight(1f)) { onSelect(2) }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        QuantityCard("3 Buah", Modifier.weight(1f)) { onSelect(3) }
-                        QuantityCard("4 Buah", Modifier.weight(1f)) { onSelect(4) }
-                    }
+                    QuantityCard("1 Buah", Modifier.fillMaxWidth()) { onSelect(1) }
+                    QuantityCard("2 Buah", Modifier.fillMaxWidth()) { onSelect(2) }
+                    QuantityCard("3 Buah", Modifier.fillMaxWidth()) { onSelect(3) }
+                    QuantityCard("4 Buah", Modifier.fillMaxWidth()) { onSelect(4) }
 
                     // Custom input
                     if (showCustomInput) {
@@ -799,11 +831,21 @@ fun SelectQuantityContent(
                         ) {
                             OutlinedTextField(
                                 value = customQuantity,
-                                onValueChange = { customQuantity = it.filter { c -> c.isDigit() } },
+                                onValueChange = { newValue -> 
+                                    val filtered = newValue.filter { c -> c.isDigit() }
+                                    if (filtered.length <= 4) customQuantity = filtered 
+                                },
                                 label = { Text("Jumlah") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
-                                singleLine = true
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = DesignTokens.Colors.TealPrimary,
+                                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color(0xFFFAFAFA)
+                                )
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Button(
@@ -812,13 +854,14 @@ fun SelectQuantityContent(
                                     if (qty != null && qty > 0) onSelect(qty)
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.Colors.TealPrimary),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.height(56.dp)
                             ) {
                                 Text("OK", fontWeight = FontWeight.Bold)
                             }
                         }
                     } else {
-                        SelectionCard(label = "✏️  Lainnya") { showCustomInput = true }
+                        QuantityCard("Lainnya", Modifier.fillMaxWidth()) { showCustomInput = true }
                     }
                 }
 
@@ -852,7 +895,10 @@ private fun QuantityCard(label: String, modifier: Modifier = Modifier, onClick: 
 // Shared: Dino Avatar + Speech Bubble
 // ============================================================
 @Composable
-private fun DinoSpeechBubble(question: String) {
+fun DinoSpeechBubble(
+    question: String,
+    bubbleColor: Color = Color(0xFFECA357)
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -868,7 +914,7 @@ private fun DinoSpeechBubble(question: String) {
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.superdinohead),
+                painter = painterResource(id = R.drawable.img_superdino_head),
                 contentDescription = "Dino Avatar",
                 modifier = Modifier
                     .size(71.dp)
@@ -883,7 +929,7 @@ private fun DinoSpeechBubble(question: String) {
         Box(
             modifier = Modifier
                 .weight(1f)
-                .background(Color(0xFFECA357), RoundedCornerShape(12.dp))
+                .background(bubbleColor, RoundedCornerShape(12.dp))
                 .padding(16.dp)
         ) {
             Text(
@@ -936,7 +982,7 @@ fun ResultContent(
             ) {
                 // Pow left
                 Image(
-                    painter = painterResource(id = R.drawable.pow1),
+                    painter = painterResource(id = R.drawable.img_pow_1),
                     contentDescription = null,
                     modifier = Modifier
                         .offset(x = (-80).dp, y = (-30).dp)
@@ -945,14 +991,14 @@ fun ResultContent(
                 )
                 // Dino yeay
                 Image(
-                    painter = painterResource(id = R.drawable.dino_yeay),
+                    painter = painterResource(id = R.drawable.img_dino_yay),
                     contentDescription = "Dino Yeay",
                     modifier = Modifier.size(220.dp),
                     contentScale = ContentScale.Fit
                 )
                 // Pow right
                 Image(
-                    painter = painterResource(id = R.drawable.pow2),
+                    painter = painterResource(id = R.drawable.img_pow_2),
                     contentDescription = null,
                     modifier = Modifier
                         .offset(x = 80.dp, y = 50.dp)
@@ -984,53 +1030,29 @@ fun ResultContent(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // XP Badge with icon
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = DesignTokens.Colors.TealPrimary
+                // Badge XP
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFD9F1FF), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFF8BB5ED), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.level),
-                            contentDescription = "XP",
-                            modifier = Modifier.size(20.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "+${state.totalGainedXp} XP",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 16.sp,
-                            color = Color.White
-                        )
-                    }
+                    Text("+${state.totalGainedXp} XP", color = Color(0xFF2C84C7), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                 }
 
-                // Coins Badge with icon
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(2.dp, Color(0xFFFFDF8D)),
-                    color = Color.White
+                // Badge Coins
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFFFECB3), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFFDCA855), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("+${state.totalGainedCoins} ", color = Color(0xFFD69400), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                         Image(
-                            painter = painterResource(id = R.drawable.goldimg),
+                            painter = painterResource(id = R.drawable.ic_gold),
                             contentDescription = "Coins",
-                            modifier = Modifier.size(20.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "+${state.totalGainedCoins}",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 16.sp,
-                            color = Color(0xFF8C6200)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
@@ -1098,7 +1120,7 @@ fun ResultContent(
 
             // Dino not done yet
             Image(
-                painter = painterResource(id = R.drawable.dinonotdoneyet),
+                painter = painterResource(id = R.drawable.img_dino_not_done_yet),
                 contentDescription = "Dino Belum Selesai",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1120,12 +1142,54 @@ fun ResultContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Ayo selesaikan misi hari ini agar\nmendapat hadiah imbalan untuk aksi\nkerenmu!",
+                text = "Terima kasih sudah melapor!\nKamu mendapatkan hadiah kecil:",
                 color = Color.Black,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 lineHeight = 21.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Badge XP
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFD9F1FF), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFF8BB5ED), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Text("+${state.lastGainedXp} XP", color = Color(0xFF2C84C7), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                }
+
+                // Badge Coins
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFFFECB3), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFFDCA855), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("+${state.lastGainedCoins} ", color = Color(0xFFD69400), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_gold),
+                            contentDescription = "Coins",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Ayo selesaikan misi hari ini agar\nmendapat Hadiah Utama (Bonus Mega)!",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
             )
 
             // Show error message if RPC failed
@@ -1136,7 +1200,7 @@ fun ResultContent(
                     color = Color(0xFFFFEBEE)
                 ) {
                     Text(
-                        text = "⚠️ ${state.errorMessage}",
+                        text = "${state.errorMessage}",
                         fontSize = 12.sp,
                         color = Color(0xFFB71C1C),
                         modifier = Modifier.padding(12.dp),
@@ -1199,4 +1263,5 @@ fun ResultContent(
     }
     }
 }
+
 

@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.auth.register
+﻿package com.example.raion.ui.features.auth.register
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -195,15 +195,15 @@ fun RegisterScreen(
             }
 
             val dinoImageRes = when(currentStep) {
-                1 -> R.drawable.dino_menyapa
-                2 -> R.drawable.dino_aha
-                3 -> R.drawable.dino_tanya
-                4 -> R.drawable.dino_ultah
-                5 -> R.drawable.dino_cool
-                6 -> R.drawable.dino_ssst
-                7 -> R.drawable.dino_ssstt
-                8 -> R.drawable.dino_yeay
-                else -> R.drawable.dino_menyapa
+                1 -> R.drawable.img_dino_greeting
+                2 -> R.drawable.img_dino_aha
+                3 -> R.drawable.img_dino_question
+                4 -> R.drawable.img_dino_birthday
+                5 -> R.drawable.img_dino_cool
+                6 -> R.drawable.img_dino_ssst
+                7 -> R.drawable.img_dino_ssst_2
+                8 -> R.drawable.img_dino_yay
+                else -> R.drawable.img_dino_greeting
             }
 
             Column(

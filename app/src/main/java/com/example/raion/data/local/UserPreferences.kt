@@ -22,6 +22,7 @@ class UserPreferences @Inject constructor(
     companion object {
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val REMEMBER_ME_ENABLED = booleanPreferencesKey("remember_me_enabled")
+        val QUIZ_PROGRESS = androidx.datastore.preferences.core.intPreferencesKey("quiz_progress")
     }
 
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data
@@ -43,6 +44,17 @@ class UserPreferences @Inject constructor(
     suspend fun saveRememberMe(remember: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[REMEMBER_ME_ENABLED] = remember
+        }
+    }
+
+    val quizProgress: Flow<Int> = context.dataStore.data
+        .map { preferences ->
+            preferences[QUIZ_PROGRESS] ?: 0
+        }
+
+    suspend fun saveQuizProgress(progress: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[QUIZ_PROGRESS] = progress
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.onboarding
+﻿package com.example.raion.ui.features.onboarding
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -67,21 +69,21 @@ fun OnboardingScreen(
         OnboardingPageInfo(
             title = "Sampah Bisa\nMerusak Bumi!",
             description = "Yuk, bantu Dino menjaga bumi agar tetap bersih dan sehat!",
-            imageRes = R.drawable.onboarding_1,
+            imageRes = R.drawable.img_onboarding_1,
             imageScale = 1.0f,
             imageOffsetY = 40.dp
         ),
         OnboardingPageInfo(
             title = "Buang Sampah Pada\nTempatnya Itu Keren",
             description = "Bersama Dino, kita jaga bumi agar kembali bersih dan asri!",
-            imageRes = R.drawable.onboarding_2,
+            imageRes = R.drawable.img_onboarding_2,
             imageScale = 1.15f,
             imageOffsetY = 0.dp
         ),
         OnboardingPageInfo(
             title = "Ayo Jadi Pahlawan\nLingkungan!",
             description = "Selesaikan misi, kumpulkan poin, dan selamatkan bumi bersama Dino!",
-            imageRes = R.drawable.onboarding_3,
+            imageRes = R.drawable.img_onboarding_3,
             imageScale = 1.15f,
             imageOffsetY = 0.dp
         )
@@ -223,6 +225,20 @@ fun OnboardingScreen(
                     onClick = { currentPage-- }
                 )
             } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.drawable.icon_app),
+                        contentDescription = "BinGo App Icon",
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "BinGo",
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1f))
             }
 

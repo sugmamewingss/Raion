@@ -1,6 +1,7 @@
-package com.example.raion.ui.features.profile
+﻿package com.example.raion.ui.features.profile
 
 import androidx.compose.foundation.Image
+import coil.compose.SubcomposeAsyncImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -43,6 +44,7 @@ fun EditProfileScreen(
     initialNickname: String,
     initialFullName: String,
     initialBirthDate: String,
+    initialAvatarUrl: String = "",
     onBackClick: () -> Unit,
     viewModel: EditProfileViewModel = hiltViewModel(),
     onSaveSuccess: () -> Unit = {}
@@ -143,14 +145,33 @@ fun EditProfileScreen(
                 .height(200.dp)
                 .background(Color(0xFFCEEBE1)) // Mint green background
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.dinoprofile), // Reusing existing dino for now
+            val imageToLoad = if (initialAvatarUrl.isNotEmpty()) initialAvatarUrl else "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png"
+
+            SubcomposeAsyncImage(
+                model = imageToLoad,
                 contentDescription = "Hero Avatar",
                 modifier = Modifier
                     .size(160.dp)
                     .align(Alignment.BottomCenter)
                     .offset(y = 10.dp), // Slightly drop it down
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit,
+                loading = {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            color = DesignTokens.Colors.OrangePrimary,
+                            strokeWidth = 3.dp
+                        )
+                    }
+                },
+                error = {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_dino_default),
+                        contentDescription = "Hero Avatar",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             )
             // Bottom stroke border divider
             Box(

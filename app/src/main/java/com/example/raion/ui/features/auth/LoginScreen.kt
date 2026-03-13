@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.auth
+﻿package com.example.raion.ui.features.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -159,7 +159,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
         Image(
-            painter = painterResource(id = R.drawable.dino_writing),
+            painter = painterResource(id = R.drawable.img_dino_writing),
             contentDescription = "Dino Menulis",
             modifier = Modifier
                 .fillMaxWidth(0.65f)

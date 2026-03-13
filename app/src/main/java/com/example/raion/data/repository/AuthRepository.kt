@@ -207,7 +207,7 @@ class AuthRepository @Inject constructor(
 
             // Fetch all profiles ordered by level DESC, total_xp DESC, id ASC
             val allProfiles = supabase.postgrest["profiles"]
-                .select(Columns.list("id")) {
+                .select(Columns.ALL) {
                     order("level", Order.DESCENDING)
                     order("total_xp", Order.DESCENDING)
                     order("id", Order.ASCENDING)

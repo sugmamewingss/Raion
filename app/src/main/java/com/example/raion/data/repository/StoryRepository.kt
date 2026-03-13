@@ -6,12 +6,10 @@ import com.example.raion.data.model.UserStoryProgressDto
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.put
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
@@ -75,24 +73,38 @@ class StoryRepository @Inject constructor(
         val is_completed: Boolean
     )
 
-    suspend fun markEpisodeCompleted(episodeId: String): Result<Unit> {
+    @kotlinx.serialization.Serializable
+    private data class StoryRpcParams(
+        @kotlinx.serialization.SerialName("p_user_id") val userId: String,
+        @kotlinx.serialization.SerialName("p_episode_id") val episodeId: String,
+        @kotlinx.serialization.SerialName("p_earned_xp") val earnedXp: Int,
+        @kotlinx.serialization.SerialName("p_earned_coins") val earnedCoins: Int,
+        @kotlinx.serialization.SerialName("p_date") val dateStr: String
+    )
+
+    suspend fun markEpisodeCompleted(episodeId: String): Result<com.example.raion.data.model.StoryRewardResponse?> {
         return try {
             val userId = getCurrentUserId() ?: throw Exception("User not logged in")
             
-            val payload = InsertProgress(
-                user_id = userId,
-                episode_id = episodeId,
-                is_completed = true
+            // Siapkan Argumen SQL RPC yang mana sudah mem-bundel Upsert Progress dan Reward
+            val params = StoryRpcParams(
+                userId = userId,
+                episodeId = episodeId,
+                earnedXp = 35,
+                earnedCoins = 10,
+                dateStr = java.time.LocalDate.now().toString()
             )
-
-            // Upsert (Insert or Update if exists, based on unique user_id + episode_id constraint)
-            android.util.Log.d("StoryRepo", "Executing Upsert for: $payload")
-            supabase.postgrest["user_story_progress"].upsert(payload) {
-                onConflict = "user_id, episode_id"
+            // Call RPC to log the history for Diary and get Rewards
+            var rewardData: com.example.raion.data.model.StoryRewardResponse? = null
+            try {
+                val dbResult = supabase.postgrest.rpc("log_story_history", params)
+                rewardData = dbResult.decodeAs<com.example.raion.data.model.StoryRewardResponse>()
+            } catch (e: Exception) {
+                android.util.Log.e("StoryRepo", "Failed logging story history: ${e.message}")
             }
             
             _refreshTrigger.tryEmit(Unit)
-            Result.success(Unit)
+            Result.success(rewardData)
         } catch (e: Exception) {
             Result.failure(e)
         }

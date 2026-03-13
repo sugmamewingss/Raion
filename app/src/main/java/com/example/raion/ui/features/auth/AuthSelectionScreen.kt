@@ -1,4 +1,4 @@
-package com.example.raion.ui.features.auth
+﻿package com.example.raion.ui.features.auth
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -192,7 +192,7 @@ fun AuthSelectionScreen(
 
         // Peeking Dino Illustration - Placed inside the inner Box so its TopCenter is the card's top edge
             Image(
-                painter = painterResource(id = R.drawable.dino_peeking),
+                painter = painterResource(id = R.drawable.img_dino_peeking),
                 contentDescription = "Peeking Dino",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier

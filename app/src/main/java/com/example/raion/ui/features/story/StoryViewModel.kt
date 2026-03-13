@@ -134,15 +134,15 @@ class StoryViewModel @Inject constructor(
         }
     }
 
-    suspend fun markEpisodeCompleted(episodeId: String): Boolean {
+    suspend fun markEpisodeCompleted(episodeId: String): com.example.raion.data.model.StoryRewardResponse? {
         Log.d("StoryViewModel", "Attempting to mark episode $episodeId as completed")
         val result = repository.markEpisodeCompleted(episodeId)
         return if (result.isSuccess) {
             Log.d("StoryViewModel", "Successfully marked $episodeId as completed.")
-            true
+            result.getOrNull()
         } else {
             Log.e("StoryViewModel", "Failed to mark as completed", result.exceptionOrNull())
-            false
+            null
         }
     }
 }

@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.raion.data.model.ActiveMission
 import com.example.raion.data.model.EduArticle
 import com.example.raion.data.model.PointShopItem
+import com.example.raion.data.model.ShopCategory
 import com.example.raion.data.model.UserProfile
+import com.example.raion.data.model.UserInventoryItem
 import com.example.raion.data.repository.AuthRepository
 import com.example.raion.data.repository.HomeRepository
 import com.example.raion.data.local.UserPreferences
@@ -25,21 +27,25 @@ data class HomeUiState(
     val username: String = "sobatgobi", // Used for "Nama Panggilan" in Edit Profile
     val fullName: String = "Sobat Gobi",
     val birthDate: String = "1 Januari 2010",
-    val avatarId: Int = 1,
+    val currentAvatarUrl: String = "", 
     val userLevel: Int = 1,
     val totalCoins: Int = 0,
+    val lifetimeCoins: Int = 0,
     val totalXp: Int = 0,
     val xpForCurrentLevel: Int = 0,
     val xpForNextLevel: Int = 100,
     val streak: Int = 0,
     val isActive: Boolean = true,
     val isMissionCompletedToday: Boolean = false,
+    val missionsCompleted: Int = 0,
 
     // Core Game Data
     val activeMissions: List<ActiveMission> = emptyList(),
     val eduArticles: List<EduArticle> = emptyList(),
     val leaderboard: List<UserProfile> = emptyList(),
     val pointShopItems: List<PointShopItem> = emptyList(),
+    val shopCategories: List<ShopCategory> = emptyList(),
+    val userInventory: List<UserInventoryItem> = emptyList(),
     
     val errorMessage: String? = null
 ) {
@@ -85,6 +91,7 @@ class HomeViewModel @Inject constructor(
 
             val newTotalXp = state.totalXp + bonusXp
             val newCoins = state.totalCoins + bonusCoins
+            val newLifetimeCoins = state.lifetimeCoins + bonusCoins
             // Recalculate level locally (same formula as DB: level = total_xp / 100 + 1)
             val newLevel = (newTotalXp / 100) + 1
 
@@ -101,6 +108,7 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 totalXp = newTotalXp,
                 totalCoins = newCoins,
+                lifetimeCoins = newLifetimeCoins,
                 userLevel = newLevel,
                 xpForCurrentLevel = (newLevel - 1) * 100,
                 xpForNextLevel = newLevel * 100,
@@ -119,6 +127,7 @@ class HomeViewModel @Inject constructor(
                     state.copy(
                         totalXp = profile.totalXp,
                         totalCoins = profile.coins,
+                        lifetimeCoins = profile.lifetimeCoins,
                         userLevel = profile.level,
                         xpForCurrentLevel = (profile.level - 1) * 100,
                         xpForNextLevel = profile.level * 100,
@@ -144,12 +153,18 @@ class HomeViewModel @Inject constructor(
             val articlesDeferred = async { homeRepository.getEducationalArticles() }
             val leaderboardDeferred = async { homeRepository.getTopPlayerProfiles() }
             val shopDeferred = async { homeRepository.getPointShopItems() }
+            val categoriesDeferred = async { homeRepository.getShopCategories() }
+            val inventoryDeferred = async { homeRepository.getUserInventory() }
+            val completedMissionsDeferred = async { homeRepository.getCompletedMissionsCount() }
 
             val profileResult = profileDeferred.await()
             val missionsResult = missionsDeferred.await()
             val articlesResult = articlesDeferred.await()
             val leaderboardResult = leaderboardDeferred.await()
             val shopResult = shopDeferred.await()
+            val categoriesResult = categoriesDeferred.await()
+            val inventoryResult = inventoryDeferred.await()
+            val completedMissionsResult = completedMissionsDeferred.await()
 
             if (profileResult.isSuccess) {
                 val profile = profileResult.getOrThrow()
@@ -160,7 +175,7 @@ class HomeViewModel @Inject constructor(
                 val formattedBirthDate = try {
                     if (profile.birthDate != null) {
                         val date = java.time.LocalDate.parse(profile.birthDate)
-                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("id", "ID"))
+                        val formatter = java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.Builder().setLanguage("id").setRegion("ID").build())
                         date.format(formatter)
                     } else "Belum diatur"
                 } catch (e: Exception) {
@@ -178,20 +193,24 @@ class HomeViewModel @Inject constructor(
                         username = profile.username,
                         fullName = profile.name,
                         birthDate = formattedBirthDate,
-                        avatarId = 1,
+                        currentAvatarUrl = if (profile.currentAvatarUrl.isNullOrEmpty()) "https://nnloirkwladlazxgpgrm.supabase.co/storage/v1/object/public/avatars/dino_default.png" else profile.currentAvatarUrl,
                         userLevel = profile.level,
                         totalCoins = profile.coins,
+                        lifetimeCoins = profile.lifetimeCoins,
                         totalXp = profile.totalXp,
                         xpForCurrentLevel = (profile.level - 1) * 100,
                         xpForNextLevel = profile.level * 100,
                         streak = profile.currentStreak,
                         isActive = true,
                         isMissionCompletedToday = completedTodayMissions,
+                        missionsCompleted = completedMissionsResult.getOrNull() ?: 0,
 
                         activeMissions = missionsResult.getOrNull() ?: emptyList(),
                         eduArticles = articlesResult.getOrNull() ?: emptyList(),
                         leaderboard = leaderboardResult.getOrNull() ?: emptyList(),
-                        pointShopItems = shopResult.getOrNull() ?: emptyList()
+                        pointShopItems = shopResult.getOrNull() ?: emptyList(),
+                        shopCategories = categoriesResult.getOrNull() ?: emptyList(),
+                        userInventory = inventoryResult.getOrNull() ?: emptyList()
                     )
                 }
             } else {
@@ -210,6 +229,52 @@ class HomeViewModel @Inject constructor(
             authRepository.logout()
             userPreferences.saveRememberMe(false)
             _isLoggedOut.value = true
+        }
+    }
+
+    // =========================================================================
+    // Shop Actions
+    // =========================================================================
+
+    fun purchaseShopItem(itemId: String) {
+        viewModelScope.launch {
+            val result = homeRepository.buyShopItem(itemId)
+            if (result.isSuccess) {
+                // Auto-equip directly after purchase
+                val equipResult = homeRepository.equipShopItem(itemId)
+                if (equipResult.isFailure) {
+                    val errorMsg = equipResult.exceptionOrNull()?.message ?: "Berhasil dibeli tetapi gagal dipakai"
+                    val cleanMsg = if (errorMsg.contains("message")) {
+                        errorMsg.substringAfter("\"message\":\"").substringBefore("\"").ifEmpty { errorMsg }
+                    } else errorMsg
+                    _uiState.update { it.copy(errorMessage = cleanMsg) }
+                }
+                
+                // Refresh data to update coins, user inventory, and the newly equipped avatar
+                loadHomeData()
+            } else {
+                _uiState.update { 
+                    it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Gagal membeli barang") 
+                }
+            }
+        }
+    }
+
+    fun equipShopItem(itemId: String) {
+        viewModelScope.launch {
+            val result = homeRepository.equipShopItem(itemId)
+            if (result.isSuccess) {
+                // Refresh data to update currentAvatarUrl
+                loadHomeData()
+            } else {
+                val errorMsg = result.exceptionOrNull()?.message ?: "Gagal mengganti avatar"
+                // Extract clean message if it's a Supabase error wrapping the DB exception
+                val cleanMsg = if (errorMsg.contains("message")) {
+                    errorMsg.substringAfter("\"message\":\"").substringBefore("\"").ifEmpty { errorMsg }
+                } else errorMsg
+                
+                _uiState.update { it.copy(errorMessage = cleanMsg) }
+            }
         }
     }
 }
