@@ -215,7 +215,7 @@ class HomeRepository @Inject constructor(
             if (isCompleted) {
                 missionsCompleted = 1
                 xpGained += 50
-                coinsGained += 10
+                coinsGained += 20
             }
             
             @kotlinx.serialization.Serializable

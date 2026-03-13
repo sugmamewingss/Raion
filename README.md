@@ -75,7 +75,7 @@ Fitur inti gamifikasi berupa **wizard 7 langkah** untuk mencatat aksi buang samp
 | 6 | **Pilih Jumlah** | 1-4 Buah + Lainnya |
 | 7 | **Hasil** | XP & koin yang didapat, opsi lanjut atau selesai |
 
-- **Reward System** - Setiap entri memberikan XP + koin via Supabase RPC (`log_waste_entry`). Bonus +50 XP & +10 koin saat misi selesai.
+- **Reward System** - Setiap entri memberikan XP + koin via Supabase RPC (`log_waste_entry`). Bonus +50 XP & +20 koin saat misi selesai.
 - **Optimistic UI** - Hasil misi langsung ter-update di Home tanpa menunggu sync backend.
 - **Fun Fact Carousel** - Setelah menyelesaikan 5/5 misi, ditampilkan carousel fakta menarik lingkungan.
 
